@@ -400,7 +400,13 @@ class MainActivity : AppCompatActivity() {
         showLoading()
         installShim(target.origin)
         val name = deviceName.trim().take(40)
-        web.loadUrl(if (name.isEmpty()) target.url else target.url + "&name=" + Uri.encode(name))  // the page reads ?pair=… and joins by itself
+        // The page reads #pair=… (kept out of every server log) and ?name=…, and joins by itself.
+        val pageUrl = when {
+            name.isEmpty() -> target.url
+            target.url.contains("/#pair=") -> target.url.replace("/#pair=", "/?name=" + Uri.encode(name) + "#pair=")
+            else -> target.url + "?name=" + Uri.encode(name)
+        }
+        web.loadUrl(pageUrl)
         web.clearHistory()  // Back must not return to the connect screen
     }
 
@@ -692,12 +698,12 @@ class MainActivity : AppCompatActivity() {
         // then copied into Downloads when complete. The page asks for them by a key.
 
         @JavascriptInterface
-        fun partSize(key: String): Long = if (isPaired(web.url)) partFile(key).let { if (it.exists()) it.length() else 0L } else 0L
+        fun partSize(key: String): Long = if (pcPage) partFile(key).let { if (it.exists()) it.length() else 0L } else 0L
 
         /** Write the next piece at `offset`. Refuses when the file is not exactly that long, so a lost or repeated piece can never corrupt it. */
         @JavascriptInterface
         fun appendPart(key: String, base64: String, offset: Long): Boolean {
-            if (!isPaired(web.url)) return false
+            if (!pcPage) return false
             return runCatching {
                 val file = partFile(key)
                 java.io.RandomAccessFile(file, "rw").use { raf ->
@@ -711,12 +717,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
-        fun discardPart(key: String) { if (isPaired(web.url)) runCatching { partFile(key).delete() } }
+        fun discardPart(key: String) { if (pcPage) runCatching { partFile(key).delete() } }
 
         /** Keep only the partial files the page still lists; anything else is leftovers. */
         @JavascriptInterface
         fun dropPartsExcept(keysJson: String) {
-            if (!isPaired(web.url)) return
+            if (!pcPage) return
             runCatching {
                 val keep = JSONArray(keysJson).let { a -> (0 until a.length()).map { safeKey(a.getString(it)) }.toSet() }
                 partsDir().listFiles()?.forEach { if (it.name.removeSuffix(".part") !in keep) it.delete() }
@@ -729,7 +735,7 @@ class MainActivity : AppCompatActivity() {
         /** The partial file is complete: copy it into Downloads. Answers through window.__afpSaved(key, ok, uri). */
         @JavascriptInterface
         fun finishPart(key: String, name: String, mime: String) {
-            if (!isPaired(web.url)) return
+            if (!pcPage) return
             io.execute {
                 var saved = ""
                 val ok = runCatching {
@@ -754,14 +760,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
-        fun deleteSaved(uri: String): Boolean = isPaired(web.url) && runCatching { contentResolver.delete(Uri.parse(uri), null, null) > 0 }.getOrDefault(false)
+        fun deleteSaved(uri: String): Boolean = pcPage && runCatching { contentResolver.delete(Uri.parse(uri), null, null) > 0 }.getOrDefault(false)
 
         @JavascriptInterface
         fun savedExists(uri: String): Boolean = runCatching { contentResolver.openFileDescriptor(Uri.parse(uri), "r")?.use { true } ?: false }.getOrDefault(false)
 
         @JavascriptInterface
         fun openSaved(uri: String, mime: String): Boolean {
-            if (!isPaired(web.url)) return false
+            if (!pcPage) return false
             return runCatching {
                 startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(uri), mime.ifBlank { "*/*" }).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK))
                 true
@@ -771,7 +777,7 @@ class MainActivity : AppCompatActivity() {
         /** While a download runs: hold the app up (a notification shows the progress), and don't let the page's timers sleep. */
         @JavascriptInterface
         fun keepAlive(title: String, text: String, percent: Int) {
-            if (!isPaired(web.url)) return
+            if (!pcPage) return
             keepRunning = true
             runCatching { DownloadService.show(this@MainActivity, title, text, percent) }
         }
@@ -784,7 +790,7 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun saveFile(name: String, mime: String, base64: String) {
-            if (!isPaired(web.url)) return
+            if (!pcPage) return
             io.execute {
                 val ok = runCatching { saveToDownloads(name, mime, Base64.decode(base64, Base64.DEFAULT)) }.getOrDefault(false)
                 runOnUiThread {

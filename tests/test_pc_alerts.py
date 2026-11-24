@@ -266,3 +266,20 @@ def test_stopping_the_app_tells_the_phones_first(paired):
         pass
     kinds = [phone.read(r.content)["kind"] for r in sent]
     assert "pc_closing" in kinds
+
+
+def test_plugging_in_and_unplugging_are_both_noticed_but_not_the_first_look():
+    alert = pcwatch.BatteryAlert()
+    assert alert.power_change({"percent": 8, "plugged": False}) is None
+    assert alert.power_change({"percent": 8, "plugged": True}) == "pc_plugged"
+    assert alert.power_change({"percent": 9, "plugged": True}) is None
+    assert alert.power_change({"percent": 9, "plugged": False}) == "pc_unplugged"
+    assert alert.power_change(None) is None
+
+
+def test_the_plugged_and_unplugged_notices_say_so_with_the_charge(tmp_path):
+    notifier, phone, seen = subscribed(tmp_path)
+    assert notifier.notify_pc("pc_plugged", percent=8, wait=True)
+    assert phone.read(seen[-1].content)["title"] == "Your PC is charging (8%)"
+    assert notifier.notify_pc("pc_unplugged", percent=80, wait=True)
+    assert phone.read(seen[-1].content)["title"] == "Your PC is on battery (80%)"

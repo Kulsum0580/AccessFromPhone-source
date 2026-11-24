@@ -24,6 +24,17 @@ class BatteryAlert:
     def __init__(self, low: int = 15, critical: int = 5):
         self.low, self.critical = low, critical
         self._level: str | None = None  # the last alert given during this discharge
+        self._plugged: bool | None = None  # what the charger was doing at the last look (None: not looked yet)
+
+    def power_change(self, battery: dict | None) -> str | None:
+        """"pc_plugged" / "pc_unplugged" the moment the charger is connected or removed (never on the first look), else None."""
+        if not battery:
+            return None
+        plugged = bool(battery.get("plugged"))
+        before, self._plugged = self._plugged, plugged
+        if before is None or before == plugged:
+            return None
+        return "pc_plugged" if plugged else "pc_unplugged"
 
     def check(self, battery: dict | None) -> int | None:
         """The percentage to warn about now, or None. `battery` is sysinfo.read_battery()'s answer (None on a desktop PC)."""
@@ -162,7 +173,11 @@ def start(notifier, battery_reader: Callable[[], dict | None] | None = None, int
     def battery_loop() -> None:
         while True:
             try:
-                percent = alert.check(reader())
+                battery = reader()
+                change = alert.power_change(battery)
+                if change:
+                    notifier.notify_pc(change, percent=int(battery.get("percent", 0)))
+                percent = alert.check(battery)
                 if percent is not None:
                     notifier.notify_pc("pc_battery", percent=percent)
             except Exception:

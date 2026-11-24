@@ -224,6 +224,71 @@ def test_typing_that_does_not_unlock_is_reported_and_counted(ready):
     assert third["code"] == "needs_attention" and len(keys.requests) == 2  # and does not type a third time
 
 
+def stop_it(store):
+    store.note_result(False)
+    store.note_result(False)
+    assert store.status()["attention"] is True
+
+
+def test_after_a_wait_it_starts_trying_again_by_itself(ready):
+    stop_it(ready)
+    ready.clock["t"] += 300
+    with pytest.raises(NeedsAttention) as waiting:
+        ready.verify_pin(PIN)
+    assert "by itself" in str(waiting.value) and 200 < waiting.value.extra["seconds"] <= 300
+    assert 0 < ready.status()["auto_resume_in"] <= 300 and ready.status()["attention"] is True
+    ready.clock["t"] += 301
+    ready.verify_pin(PIN)                                          # the wait is over: the next request from the phone is allowed
+    assert ready.status()["attention"] is False and ready.status()["auto_resumes_left"] == 2
+
+
+def test_the_pc_page_sees_it_running_again_without_any_request(ready):
+    stop_it(ready)
+    ready.clock["t"] += 601
+    assert ready.status()["attention"] is False and ready.status()["auto_resume_in"] == 0
+
+
+def test_it_restarts_itself_only_a_few_times_then_waits_for_the_owner(ready):
+    said = []
+    ready.notice = said.append
+    for round_ in range(3):
+        stop_it(ready)
+        ready.clock["t"] += 601
+        ready.verify_pin(PIN)
+    assert len(said) == 3 and "3 of 3" in said[-1]
+    stop_it(ready)                                                  # the saved sign-in is probably wrong: this must not go on for ever
+    ready.clock["t"] += 100000
+    with pytest.raises(NeedsAttention) as stuck:
+        ready.verify_pin(PIN)
+    assert "even after it tried again" in str(stuck.value) and ready.status()["attention"] is True and ready.status()["auto_resume_in"] == 0
+
+
+def test_a_good_unlock_gives_the_automatic_restarts_back(ready):
+    stop_it(ready)
+    ready.clock["t"] += 601
+    ready.verify_pin(PIN)
+    ready.note_result(True)
+    assert ready.status()["auto_resumes_left"] == 3
+
+
+def test_the_owner_starting_it_gives_the_automatic_restarts_back_too(ready):
+    for _ in range(3):
+        stop_it(ready)
+        ready.clock["t"] += 601
+        ready.verify_pin(PIN)
+    stop_it(ready)
+    ready.clear_attention()
+    assert ready.status()["auto_resumes_left"] == 3 and ready.status()["attention"] is False
+
+
+def test_the_helper_logs_that_it_restarted_itself(ready):
+    agent, _, _, log = make_agent(ready, unlocks=False)
+    stop_it(ready)
+    ready.clock["t"] += 601
+    ready.status()
+    assert any("started trying again by itself (1 of 3)" in line for line in agent.recent)
+
+
 def test_a_keyboard_failure_is_reported_and_counted(ready):
     agent, _, _, _ = make_agent(ready, code=3)
     answer = agent.handle({"cmd": "unlock", "pin": PIN})
@@ -707,7 +772,7 @@ class FakeAdminUnlocker(FakeUnlocker):
 def test_the_pc_page_shows_whether_unlocking_is_on_but_never_the_sign_in(admin):
     client, headers, helper, _ = admin
     got = client.get("/admin/unlock", headers=headers).json()
-    assert got == {"running": True, "configured": True, "enabled": True, "kind": "pin", "attention": False, "locked_for": 0, "locked": True}
+    assert got == {"running": True, "configured": True, "enabled": True, "kind": "pin", "attention": False, "locked_for": 0, "locked": True, "auto_resume_in": None, "auto_resumes_left": None}
 
 
 def test_the_pc_page_can_switch_it_off_and_remove_it(admin):
@@ -1246,3 +1311,26 @@ def test_the_setup_window_command_asks_for_administrator_rights_first(monkeypatc
     monkeypatch.setattr(setup, "is_admin", lambda: False)
     monkeypatch.setattr(setup, "relaunch_elevated", lambda args, windowed=False: asked.append((args, windowed)) or True)
     assert setup.main(["gui"]) == 0 and asked == [(["gui"], True)]
+
+
+# -- why Windows said no to the administrator request
+
+def test_a_policy_that_refuses_non_administrators_is_named_as_the_reason():
+    why = setup.elevation_refusal_reason(read_policy=lambda: 0, groups=lambda: "Mandatory Label\Medium Mandatory Level   Label  S-1-16-8192")
+    assert "isn't an administrator" in why and "IT team" in why and "setup status" in why
+
+
+@pytest.mark.parametrize("mode,groups", [(1, ""), (3, ""), (None, ""), (0, "BUILTIN\Administrators  Group used for deny only  S-1-5-32-544")])
+def test_no_reason_is_given_when_it_was_probably_a_declined_prompt(mode, groups):
+    assert setup.elevation_refusal_reason(read_policy=lambda: mode, groups=lambda: groups) == ""
+
+
+def test_the_pc_page_says_why_when_windows_refuses_the_setup_window(admin, monkeypatch):
+    client, headers, helper, _ = admin
+    helper.info.update(configured=False)
+    monkeypatch.setattr(setup, "relaunch_elevated", lambda args, windowed=False: False)
+    monkeypatch.setattr(setup, "elevation_refusal_reason", lambda *a, **k: "This Windows account isn't an administrator on this PC.")
+    refused = client.post("/admin/unlock/setup", headers=headers)
+    assert refused.status_code == 409 and "isn't an administrator" in refused.json()["detail"]
+    monkeypatch.setattr(setup, "elevation_refusal_reason", lambda *a, **k: "")
+    assert "declined or blocked" in client.post("/admin/unlock/setup", headers=headers).json()["detail"]

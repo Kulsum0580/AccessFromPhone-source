@@ -78,6 +78,7 @@ class Agent:
             log(line)
 
         self._log = remember
+        store.notice = remember   # so the log says when it restarted itself
         self._wait, self._sleep = wait_seconds, sleep
         self._busy = threading.Lock()
 

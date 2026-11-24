@@ -16,11 +16,13 @@ dependencies = [
     "websockets>=14",
     "httpx>=0.27",
     "pillow>=10.0",  # thumbnails for the gallery, and checking an edited picture before it is saved
+    "PyAudioWPatch>=0.2.12; sys_platform == 'win32'",  # the PC's sound for a phone that is looking (optional at run time: without it the Sound switch says it is not available)
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "httpx>=0.27"]
 build = ["pyinstaller>=6.0", "pystray>=0.19", "pillow>=10.0"]  # the tray app and the Windows installer
+webcam = ["opencv-python>=4.8"]  # the optional webcam photo (daily.webcam)
 
 [tool.setuptools.package-data]
 handoff = ["web/*", "web/vendor/*"]

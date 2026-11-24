@@ -70,7 +70,35 @@ def relaunch_elevated(args: list[str], windowed: bool = False) -> bool:
         exe = exe[:-len("python.exe")] + "pythonw.exe"
     params = subprocess.list2cmdline(["-m", "handoff.unlock.setup", *args])
     result = ctypes.windll.shell32.ShellExecuteW(None, "runas", exe, params, str(Path(__file__).resolve().parents[3]), 1)
+    if int(result) <= 32:
+        note(f"Windows refused the administrator request (ShellExecute code {int(result)}; 5 = refused or declined, 2/3 = program not found)")
     return int(result) > 32
+
+
+def elevation_refusal_reason(read_policy: Callable[[], int | None] | None = None, groups: Callable[[], str] | None = None) -> str:
+    """When Windows refused the administrator request, why - if that can be told. A work PC's policy can refuse every such request for an account that is not an
+    administrator, without ever showing a prompt, which looks exactly like a declined one. "" when the reason isn't known."""
+    try:
+        if read_policy is not None:
+            mode = read_policy()
+        else:
+            import winreg
+
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System") as key:
+                mode = int(winreg.QueryValueEx(key, "ConsentPromptBehaviorUser")[0])
+        if mode != 0:   # 0 = "automatically deny elevation requests" for accounts that are not administrators
+            return ""
+        if groups is not None:
+            listing = groups()
+        else:
+            listing = subprocess.run([str(Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "whoami.exe"), "/groups"], capture_output=True, text=True, timeout=10).stdout
+        if "S-1-5-32-544" in listing:   # in the Administrators group (even if only for approving a prompt): the refusal is not this policy
+            return ""
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return ""
+    return ("This Windows account isn't an administrator on this PC, and this PC's settings automatically refuse administrator requests from it, so Windows said no without asking. "
+            "Ask your IT team, or sign in with an administrator account and, in an administrator PowerShell here, run  python -m handoff.unlock.setup status  to see what is missing "
+            "(it says whether to run repair or install).")
 
 
 def sign_in_looks_like_pin(read: Callable[[], str] | None = None) -> bool:
@@ -278,7 +306,9 @@ def status(say: Callable[[str], None] = print, port: int = DEFAULT_PORT) -> int:
     if info.get("log"):
         say("Recent helper log (newest last):\n  " + "\n  ".join(info["log"]))
     if info.get("attention"):
-        say("It has STOPPED itself: typing the saved sign-in didn't unlock the PC twice. Check that the saved sign-in is still right, then run  python -m handoff.unlock.setup resume.")
+        wait = info.get("auto_resume_in") or 0
+        again = f" It will start trying again by itself in about {max(1, round(wait / 60))} minute(s)." if wait else " It has already tried again by itself and is waiting for you."
+        say("It has STOPPED itself: typing the saved sign-in didn't unlock the PC twice." + again + " Check that the saved sign-in is still right, then run  python -m handoff.unlock.setup resume  to start now.")
     if info.get("locked_for"):
         say(f"Paused for {info['locked_for']} s after wrong PINs.")
     return 0
@@ -303,7 +333,7 @@ def main(argv: list[str] | None = None) -> int:
             note(f"{command}: asking for administrator rights")
             ok = relaunch_elevated(args)
             if not ok:
-                print("Windows did not give administrator rights (the prompt was declined or blocked). Open PowerShell as Administrator and run the same command there.")
+                print(elevation_refusal_reason() or "Windows did not give administrator rights (the prompt was declined or blocked). Open PowerShell as Administrator and run the same command there.")
                 note("administrator rights refused")
             return 0 if ok else 1
         try:

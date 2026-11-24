@@ -51,9 +51,75 @@ CREATE TABLE IF NOT EXISTS push_subs (
 );
 CREATE INDEX IF NOT EXISTS push_subs_device ON push_subs (device_id);
 
+CREATE TABLE IF NOT EXISTS screen_grants (
+    device_id TEXT PRIMARY KEY,
+    until     REAL NOT NULL,
+    control   INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS device_access (
+    device_id TEXT PRIMARY KEY,
+    level     TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS push_prefs (
+    device_id TEXT PRIMARY KEY,
+    data      TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS grants (
     path   TEXT PRIMARY KEY,
     change INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS folder_access (
+    path   TEXT NOT NULL,
+    device TEXT NOT NULL DEFAULT '',
+    change INTEGER NOT NULL DEFAULT 0,
+    shared TEXT NOT NULL DEFAULT '{}',
+    PRIMARY KEY (path, device)
+);
+
+CREATE TABLE IF NOT EXISTS daily_inbox (
+    id      TEXT PRIMARY KEY,
+    kind    TEXT NOT NULL,
+    name    TEXT NOT NULL DEFAULT '',
+    body    TEXT NOT NULL DEFAULT '',
+    size    INTEGER NOT NULL DEFAULT 0,
+    device  TEXT NOT NULL DEFAULT '',
+    created REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS daily_inbox_created ON daily_inbox (created);
+
+CREATE TABLE IF NOT EXISTS daily_tasks (
+    id          TEXT PRIMARY KEY,
+    kind        TEXT NOT NULL,
+    action      TEXT NOT NULL DEFAULT '',
+    text        TEXT NOT NULL DEFAULT '',
+    due         REAL NOT NULL,
+    repeat      TEXT NOT NULL DEFAULT '',
+    device      TEXT NOT NULL DEFAULT '',
+    device_name TEXT NOT NULL DEFAULT '',
+    created     REAL NOT NULL,
+    last_run    REAL NOT NULL DEFAULT 0,
+    last_result TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS daily_watch (
+    id          TEXT PRIMARY KEY,
+    kind        TEXT NOT NULL,
+    target      TEXT NOT NULL,
+    label       TEXT NOT NULL DEFAULT '',
+    then_do     TEXT NOT NULL DEFAULT '',
+    device      TEXT NOT NULL DEFAULT '',
+    device_name TEXT NOT NULL DEFAULT '',
+    created     REAL NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS daily_favs (
+    path    TEXT PRIMARY KEY,
+    label   TEXT NOT NULL DEFAULT '',
+    created REAL NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS jobs (
@@ -81,6 +147,8 @@ class Database:
             self._conn.execute("PRAGMA journal_mode=WAL")  # readers never block the writer
             self._conn.execute("PRAGMA synchronous=NORMAL")
             self._conn.executescript(_SCHEMA)
+            if "install_hash" not in {r["name"] for r in self._conn.execute("PRAGMA table_info(devices)")}:
+                self._conn.execute("ALTER TABLE devices ADD COLUMN install_hash TEXT NOT NULL DEFAULT ''")  # which app install this entry is
             self._conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
 
     def run(self, sql: str, params: tuple = ()) -> int:

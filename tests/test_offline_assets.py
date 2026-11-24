@@ -37,7 +37,7 @@ def test_nothing_reaches_the_pc_while_saved_chats_are_shown():
     api = api[:api.index("const res = await fetch")]
     assert "S.offline" in api  # every call through api() is refused first
     assert "if (S.offline) return;" in APP[APP.index("async function refresh()"):APP.index("async function refresh()") + 400]  # and so is the poll that would replace them
-    assert "if (S.offline)" in APP[APP.index("async function send("):APP.index("async function send(") + 300]
+    assert "S.offline ||" in APP[APP.index("async function send("):APP.index("async function send(") + 800]  # a request typed then is held on the phone, not sent
 
 
 def test_the_saved_copy_is_wiped_on_every_way_out():

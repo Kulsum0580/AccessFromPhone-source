@@ -165,12 +165,12 @@ def test_the_user_can_allow_editing_in_a_folder_then_save_there_and_take_it_back
     assert client.get("/api/file", params={"path": path}).status_code == 403
 
     granted = client.post("/api/access/grant", json={"path": str(elsewhere), "change": True}).json()["granted"]
-    assert granted == [{"path": str(elsewhere.resolve()), "change": True}]
+    assert [(g["path"], g["change"]) for g in granted] == [(str(elsewhere.resolve()), True)]
     info = client.get("/api/file", params={"path": path}).json()
     assert info["can_change"] is True
     saved = client.put("/api/file", json={"path": path, "text": info["text"].replace("7", "8"), "base_sha": info["sha"]}).json()
     assert saved["saved"] and (elsewhere / "00007888.inuse").read_text().startswith('<Batch id="8"/>')
-    assert client.get("/api/info").json()["folders"]["granted_details"] == [{"path": str(elsewhere.resolve()), "change": True}]
+    assert [(g["path"], g["change"]) for g in client.get("/api/info").json()["folders"]["granted_details"]] == [(str(elsewhere.resolve()), True)]
 
     client.post("/api/access/revoke", json={"path": str(elsewhere)})
     assert client.put("/api/file", json={"path": path, "text": "again", "base_sha": None}).status_code == 403

@@ -40,7 +40,7 @@ android {
 // The "Connect to your PC" screen is the page's own, built into the app: these files are copied from the PC app's page every build,
 // so the app and the browser show the same screen and can never drift apart.
 val copyPage = tasks.register<Copy>("copyPage") {
-    from(rootDir.resolve("../src/handoff/web")) { include("index.html", "app.css", "conn.js", "offline.js", "app.js", "icon.svg") }
+    from(rootDir.resolve("../src/handoff/web")) { include("index.html", "app.css", "glass.css", "conn.js", "offline.js", "queue.js", "titles.js", "access.js", "screen.js", "ux.js", "app.js", "icon.svg") }
     into(layout.buildDirectory.dir("generated/page/web"))
 }
 android.sourceSets.getByName("main").assets.srcDir(layout.buildDirectory.dir("generated/page"))

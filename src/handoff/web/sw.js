@@ -6,7 +6,7 @@
 const VERSION = "__VERSION__";  // the server puts the app's version here, so an update replaces the stored files
 const SHELL = "afp-shell-" + VERSION;
 const FILES = [
-  "/", "/static/app.css", "/static/conn.js", "/static/offline.js", "/static/app.js", "/static/icon.svg", "/static/manifest.webmanifest",
+  "/", "/static/app.css", "/static/glass.css", "/static/conn.js", "/static/offline.js", "/static/queue.js", "/static/titles.js", "/static/access.js", "/static/screen.js", "/static/ux.js", "/static/app.js", "/static/icon.svg", "/static/manifest.webmanifest",
   "/static/icon-192.png", "/static/icon-512.png", "/static/vendor/jsQR.js",
 ];
 

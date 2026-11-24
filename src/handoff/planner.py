@@ -24,6 +24,7 @@ from .config import Action, LlmConfig
 from . import imaging, sysinfo
 from .power import ACTIONS as POWER_ACTIONS
 from .policy import OutsideAllowed, PolicyError
+from .titles import TITLE_SYSTEM, clean_title
 
 MAX_READ_CHARS = 8_000
 
@@ -68,7 +69,7 @@ class Step:
         if self.action in (Action.MOVE, Action.COPY):
             return f"to {self.target}"
         if self.action is Action.RUN:
-            return f"$ {(self.content or '').strip()[:300]} (cannot be undone)"
+            return f"$ {(self.content or '').strip()} (cannot be undone)"  # the WHOLE command: an approval must never hide the end of what it allows
         if self.action is Action.APP:
             return _app_detail(self)
         if self.action is Action.POWER:
@@ -602,6 +603,8 @@ _POLITE = r"(?:(?:please|pls|kindly|hey|ok(?:ay)?|now)[ ,]+)*(?:(?:can|could|wou
 _NOUN = r"pc|computer|laptop|machine|desktop|workstation|system"
 _PC = rf"(?:(?:my|the|this|our)\s+)?(?:{_NOUN})"
 _POWER = [
+    ("screen_on", re.compile(rf"^{_POLITE}(?:(?:turn|switch|put|bring)\s+(?:on|back\s+on)|wake|(?:bring|put)\s+back|restore|un-?black(?:\s*out)?)\s+(?:(?:my|the|this|our)\s+)?(?:screen|monitor|display)(?:\s+(?:on|back(?:\s+on)?))?\W*$|^{_POLITE}(?:(?:turn|switch)\s+(?:my|the|this|our)?\s*(?:screen|monitor|display)\s+(?:back\s+)?on)\W*$", re.I)),
+    ("screen_off", re.compile(rf"^{_POLITE}(?:(?:turn|switch|black|blank)\s+off|black\s*out|blank|dark(?:en)?)\s+(?:(?:my|the|this|our)\s+)?(?:screen|monitor|display)\W*$|^{_POLITE}(?:(?:turn|switch)\s+(?:my|the|this|our)?\s*(?:screen|monitor|display)\s+off)\W*$", re.I)),
     ("unlock", re.compile(rf"^{_POLITE}unlock\s+(?:{_PC}|(?:(?:my|the|this)\s+)?(?:lock\s*screen|screen|windows))\W*$", re.I)),
     ("hibernate", re.compile(rf"^{_POLITE}hibernate\s+{_PC}\W*$", re.I)),
     ("restart", re.compile(rf"^{_POLITE}(?:restart|reboot)\s+{_PC}\W*$", re.I)),
@@ -1229,6 +1232,28 @@ class OllamaPlanner:
         if setting == "auto":
             return max(1, (os.cpu_count() or 4) - 2)
         return setting or None
+
+    def title(self, prompt: str) -> str | None:
+        """A short name for a chat that starts with this request, from the local model. None when it has nothing usable (never an error:
+        the phone already has a name made from the words)."""
+        payload = {
+            "model": self._llm.model,
+            "messages": [{"role": "system", "content": TITLE_SYSTEM}, {"role": "user", "content": " ".join(prompt.split())[:600]}],
+            "stream": False,
+            "keep_alive": self._llm.keep_alive,
+            "options": {
+                "temperature": 0.2,
+                "num_ctx": self._llm.num_ctx,  # the same size the planner uses, so naming a chat never makes Ollama reload the model
+                "num_predict": 24,
+                **({"num_thread": threads} if (threads := self._threads()) else {}),
+            },
+        }
+        try:
+            data = self._transport(f"{self._llm.base_url}/api/chat", payload, min(self._llm.timeout_seconds, 25))
+        except PlanError:
+            return None
+        message = data.get("message") if isinstance(data, dict) else None
+        return clean_title(message.get("content") if isinstance(message, dict) else None)
 
     def _chat(self, messages: list[dict], tools: list[dict]) -> dict:
         payload = {

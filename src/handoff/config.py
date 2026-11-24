@@ -85,8 +85,8 @@ class PushConfig(BaseModel):
 
     enabled: bool = False
     # The first four are about a request. The pc_* ones tell the phone BEFORE this PC goes away (it cannot tell the phone afterwards).
-    notify_on: list[Literal["awaiting", "needs_access", "done", "failed", "pc_sleep", "pc_restart", "pc_shutdown", "pc_closing", "pc_battery"]] = [
-        "awaiting", "needs_access", "done", "failed", "pc_sleep", "pc_restart", "pc_shutdown", "pc_closing", "pc_battery"]
+    notify_on: list[Literal["awaiting", "needs_access", "done", "failed", "pc_sleep", "pc_restart", "pc_shutdown", "pc_closing", "pc_battery", "pc_plugged", "pc_unplugged"]] = [
+        "awaiting", "needs_access", "done", "failed", "pc_sleep", "pc_restart", "pc_shutdown", "pc_closing", "pc_battery", "pc_plugged", "pc_unplugged"]
     battery_low_percent: int = Field(15, ge=5, le=50)  # "PC battery is low" at this level when unplugged (and once more at 5%)
     show_details: bool = False  # false = the notification never says what the request was or what it found (it passes through Google/Apple)
     min_seconds: int = Field(15, ge=0)  # "done" is sent only for a request that took at least this long, so an instant answer does not buzz
@@ -112,7 +112,7 @@ class AppsConfig(BaseModel):
 
 
 class PowerConfig(BaseModel):
-    remote_actions: list[Literal["lock", "sleep", "hibernate", "restart", "shutdown"]] = ["lock", "sleep"]  # what the phone may ask this PC to do (each one still needs your approval)
+    remote_actions: list[Literal["lock", "screen_off", "sleep", "hibernate", "restart", "shutdown"]] = ["lock", "screen_off", "sleep"]  # what the phone may ask this PC to do (each one still needs your approval)
     keep_awake: bool = True  # stop Windows sleeping while the app runs, so the phone can always reach the PC (the screen may still turn off)
 
 
@@ -244,8 +244,10 @@ class ApprovalConfig(BaseModel):
         return self
 
 
-# Best-effort block list. The real protections are: commands are off by default, every
-# command waits for the user's approval, and it only runs inside a writable folder.
+# A speed bump, NOT a sandbox. It stops the careless and the obvious, and it is easy to get around
+# (encoded or split-up commands, other tools that download or run things). The real protections are:
+# commands are off by default, every command waits for the user's approval with the whole command
+# shown, and it starts inside a writable folder (which is where it begins, not a wall around it).
 DEFAULT_DENY = [
     r"(^|[;&|(]\s*)format(\.com)?\s+[A-Za-z]:",  # the disk command, not Get-Date -Format or Format-Table
     r"\bFormat-Volume\b",
@@ -321,6 +323,7 @@ class StorageConfig(BaseModel):
     link_expiry_minutes: int = Field(60, ge=1)
     database: Path = Field(Path("data/app.db"), validate_default=True)  # one SQLite file: accounts, phones, chats, audit, allowed folders
     grants_file: Path = Field(Path("data/grants.json"), validate_default=True)  # only read once, to bring an older list into the database
+    lock_data_folder: bool = True  # close the data folder to every other account on this PC (this Windows user and the system keep it)
 
     @field_validator("results_dir", "snapshots_dir", "grants_file", "database")
     @classmethod
@@ -338,6 +341,62 @@ class LoggingConfig(BaseModel):
         return _abs(value)
 
 
+class AccessConfig(BaseModel):
+    """Who may do what on this PC, and one person at a time. `enabled: false` switches the whole thing off (every paired phone acts freely, as before)."""
+
+    enabled: bool = True
+    lease_seconds: int = Field(60, ge=10, le=600)  # a phone that has not checked in this long has gone: its turn ends
+    idle_minutes: int = Field(5, ge=1, le=240)  # nothing changed this long: the turn ends
+    ask_seconds: int = Field(60, ge=10, le=600)  # how long the person using the PC has to answer "may I have a turn?"
+    cooldown_seconds: int = Field(120, ge=0, le=3600)  # after "no, I'm still using it", how long before the same phone may ask again
+
+
+class ScreenConfig(BaseModel):
+    """Looking at this PC's screen from a phone: view only, one viewer at a time, only with the Owner's yes on this PC, always visible here."""
+
+    enabled: bool = True
+    idle_seconds: int = Field(20, ge=5, le=300)  # a phone that stops asking for pictures this long loses the viewing
+    ask_seconds: int = Field(120, ge=15, le=900)  # how long a request waits for the Owner's answer
+    banner: bool = True  # the small always-on-top window on this PC (asking, and viewing with a Stop button)
+    control: bool = True  # false: no phone can ever move the mouse or type on this PC, whatever it is allowed
+    admin_needs_yes: bool = False  # false: the Admin phone (the Owner's own) may look without asking each time; the banner and Stop still show on this PC
+    audio: bool = True  # a phone that is looking may also listen to what this PC is playing (needs the audio package; off here: never)
+    clipboard: bool = True  # a phone that controls this PC may paste text to it and read its clipboard (text only; every use is logged)
+    panic_key: str = "ctrl+alt+shift+x"  # pressed on THIS PC's keyboard: stops looking and control at once, takes back control, and blocks it for a short while. "" turns it off
+    release_after_seconds: int = Field(5, ge=2, le=60)  # a mouse button or key still held down with no word from the phone this long is let go (a dropped connection mid-drag)
+
+
+class DailyConfig(BaseModel):
+    """Everyday helpers on the phone: quick controls, an inbox, notes, reminders, watchers, a briefing, printing and snapshots. `enabled: false` removes all of them."""
+
+    enabled: bool = True
+    folder: Path = Field(Path("~/Documents/AccessFromPhone"), validate_default=True)  # holds Inbox (sent from the phone), To phone (files for the phone), Notes and Screenshots
+    max_upload_mb: int = Field(100, ge=1, le=2048)  # the largest file the phone may send to this PC's inbox
+    printing: bool = True  # print a file on this PC's default printer (each print is confirmed on the phone and logged)
+    notifications: bool = False  # show this PC's Windows notifications on the phone. Off by default: they can hold private messages
+    webcam: bool = False  # let the Admin phone take one photo with this PC's webcam (needs the opencv-python package). Off by default; each photo is logged and alerts every phone
+
+    @field_validator("folder")
+    @classmethod
+    def _absolute(cls, value: Path) -> Path:
+        return _abs(Path(value).expanduser())
+
+
+class LinksConfig(BaseModel):
+    """Where the phone's Settings sends people for the privacy policy and for help. Empty = not shown. Must be https."""
+
+    privacy_url: str = ""
+    support_url: str = ""
+
+    @field_validator("privacy_url", "support_url")
+    @classmethod
+    def _https_only(cls, value: str) -> str:
+        value = value.strip()
+        if value and not (value.startswith("https://") and " " not in value and len(value) <= 300):
+            raise ValueError("links: must be an https:// address with no spaces")
+        return value
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="HANDOFF_",
@@ -351,6 +410,10 @@ class Settings(BaseSettings):
     accounts: AccountsConfig = Field(default_factory=AccountsConfig)
     connectivity: ConnectivityConfig = Field(default_factory=ConnectivityConfig)
     power: PowerConfig = Field(default_factory=PowerConfig)
+    links: LinksConfig = Field(default_factory=LinksConfig)
+    access: AccessConfig = Field(default_factory=AccessConfig)
+    screen: ScreenConfig = Field(default_factory=ScreenConfig)
+    daily: DailyConfig = Field(default_factory=DailyConfig)
     apps: AppsConfig = Field(default_factory=AppsConfig)
     unlock: UnlockConfig = Field(default_factory=UnlockConfig)
     relay: RelayConfig = Field(default_factory=RelayConfig)

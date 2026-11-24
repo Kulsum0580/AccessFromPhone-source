@@ -1,4 +1,4 @@
-"""Lock, sleep, hibernate, restart or shut down this PC from the phone.
+"""Lock, black out the screen, sleep, hibernate, restart or shut down this PC from the phone.
 
 Each one is a plan the person approves. Sleep, restart and shut down end the connection, so the phone is told first and the
 action runs a few seconds later. Restart and shut down are off unless config.yaml allows them.
@@ -28,6 +28,11 @@ class PowerAction:
 ACTIONS: dict[str, PowerAction] = {a.key: a for a in (
     PowerAction("lock", "Lock this PC", "lock the screen", "Anyone at the PC will need the Windows password to use it. Your phone keeps working.",
                 "The PC is locked.", False),
+    PowerAction("screen_off", "Black out this PC's screen", "cover the PC's screen with black (the PC keeps running)",
+                "Only what is on the PC's own monitor goes black. The PC stays on, and your phone still sees and controls the real screen. Touching the PC's own mouse or keyboard brings it back.",
+                "The PC's screen is black. The PC is still running, and you can still see and control it from here.", False),
+    PowerAction("screen_on", "Turn this PC's screen back on", "take the black cover off the PC's screen",
+                "The PC's own monitor shows the desktop again.", "The PC's screen is back on.", False),
     PowerAction("unlock", "Unlock this PC", "type the saved sign-in at the lock screen",
                 "Your PC's saved Windows sign-in is typed at its lock screen. Type your unlock PIN to allow it.", "The PC is unlocked.", False),
     PowerAction("sleep", "Put this PC to sleep", "go to sleep in a few seconds",
@@ -58,6 +63,21 @@ def _lock() -> None:
     ctypes.windll.user32.LockWorkStation()
 
 
+def _screen_off() -> None:
+    """A black cover, not "monitor off": switching the display off makes a Modern Standby PC freeze its programs, this app included."""
+    from .screen.blackout import blackout
+
+    why = blackout.on()
+    if why:
+        raise RuntimeError(why)
+
+
+def _screen_on() -> None:
+    from .screen.blackout import blackout
+
+    blackout.off()
+
+
 def _shutdown(flag: str) -> None:
     subprocess.run(["shutdown", flag, "/t", str(GRACE_SECONDS), "/c", "AccessFromPhone: requested from your phone. Run `shutdown /a` to cancel."],
                    check=False, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
@@ -65,6 +85,8 @@ def _shutdown(flag: str) -> None:
 
 DOERS: dict[str, Callable[[], None]] = {
     "lock": _lock,
+    "screen_off": _screen_off,
+    "screen_on": _screen_on,
     "sleep": lambda: _suspend(False),
     "hibernate": lambda: _suspend(True),
     "restart": lambda: _shutdown("/r"),
@@ -77,6 +99,9 @@ def schedule(key: str, delay: float = DELAY_SECONDS, doer: Callable[[], None] | 
     action = ACTIONS[key]
     if doer is None and not supported():
         raise RuntimeError("Power actions from the phone work on Windows only.")
+    if key in ("screen_off", "screen_on"):  # at once, on this thread: if the cover cannot be made the person is told, not told "done"
+        (doer or DOERS[key])()
+        return action.done
     timer = threading.Timer(delay if action.ends_connection else 0.5, doer or DOERS[key])
     timer.daemon = True
     timer.start()

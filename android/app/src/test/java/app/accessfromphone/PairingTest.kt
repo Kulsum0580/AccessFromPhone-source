@@ -14,7 +14,7 @@ class PairingTest {
     fun `an address and a typed code connect like a scan`() {
         val t = Pairing.fromAddressAndCode("192.168.1.20:8765", "7kcx g7za")!!
         assertEquals("https://192.168.1.20:8765", t.origin)
-        assertEquals("https://192.168.1.20:8765/?pair=7KCX-G7ZA", t.url)
+        assertEquals("https://192.168.1.20:8765/#pair=7KCX-G7ZA", t.url)
     }
 
     @Test
@@ -48,7 +48,17 @@ class PairingTest {
         val t = Pairing.fromQr("https://10.157.162.14:8765/?pair=7KCX-G7ZA")
         assertNotNull(t)
         assertEquals("https://10.157.162.14:8765", t!!.origin)
-        assertEquals("https://10.157.162.14:8765/?pair=7KCX-G7ZA", t.url)
+        assertEquals("https://10.157.162.14:8765/#pair=7KCX-G7ZA", t.url)  // loaded with the code after the #, even from an older PC's ?pair= code
+    }
+
+    @Test
+    fun `a code with the pairing part after the hash is accepted`() {
+        val t = Pairing.fromQr("https://10.157.162.14:8765/#pair=7KCX-G7ZA")
+        assertNotNull(t)
+        assertEquals("https://10.157.162.14:8765", t!!.origin)
+        assertEquals("https://10.157.162.14:8765/#pair=7KCX-G7ZA", t.url)
+        assertNull(Pairing.fromQr("https://example.com/#pair=short"))
+        assertNull(Pairing.fromQr("https://example.com/#/settings"))
     }
 
     @Test
@@ -76,7 +86,7 @@ class PairingTest {
     @Test
     fun `the code cannot smuggle in a second address`() {
         val t = Pairing.fromQr("https://10.0.0.5:8765/?pair=ABCD-2345&next=https://evil.example")
-        assertEquals("https://10.0.0.5:8765/?pair=ABCD-2345", t!!.url)  // only the origin and the code are used
+        assertEquals("https://10.0.0.5:8765/#pair=ABCD-2345", t!!.url)  // only the origin and the code are used
     }
 
     // ---- a typed address

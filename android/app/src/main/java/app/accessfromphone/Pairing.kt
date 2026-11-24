@@ -8,13 +8,16 @@ object Pairing {
 
     private val PAIR = Regex("^[A-Za-z0-9]{4}-?[A-Za-z0-9]{4}$")
 
-    /** The QR code on the PC holds https://host/?pair=XXXX-XXXX. Anything else is not ours. */
+    /**
+     * The QR code on the PC holds https://host/#pair=XXXX-XXXX (the part after the # is never sent to a server, so no proxy or relay log
+     * can hold the code). An older PC's code, https://host/?pair=XXXX-XXXX, is still accepted. Anything else is not ours.
+     */
     fun fromQr(text: String): Target? {
         val uri = parse(text.trim()) ?: return null
-        val pair = query(uri.rawQuery, "pair") ?: return null
+        val pair = query(uri.rawFragment, "pair") ?: query(uri.rawQuery, "pair") ?: return null
         if (!PAIR.matches(pair)) return null
         val origin = originOf(uri)
-        return Target(origin, "$origin/?pair=$pair")
+        return Target(origin, "$origin/#pair=$pair")
     }
 
     /** A hand-typed address: "192.168.1.5:8765", "abc123.xyz.com" or a full link. The page then asks for the code itself. */
@@ -35,7 +38,7 @@ object Pairing {
         val clean = cleanCode(code)
         if (clean.length != 8) return null
         val target = fromAddress(address) ?: return null
-        return Target(target.origin, "${target.origin}/?pair=${clean.take(4)}-${clean.drop(4)}")
+        return Target(target.origin, "${target.origin}/#pair=${clean.take(4)}-${clean.drop(4)}")
     }
 
     /** The address of a PC found on the Wi-Fi: its announced host and port, encrypted unless the PC says it turned that off. */

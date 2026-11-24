@@ -110,7 +110,7 @@ def main() -> int:
         store.note_result(False)
         store.note_result(False)
         text = look("a3-stopped.png")
-        check("a helper that stopped itself says so", "Stopped" in text and "stopped itself" in text, text)
+        check("a helper that stopped itself says so, and that it will start again by itself", "Stopped" in text and "paused" in text and "start again by itself" in text, text)
         check("and offers Start trying again", button("Start trying again"))
         page.js("[...document.querySelectorAll('.dmain .conn button')].find(b => b.textContent.trim() === 'Start trying again').click()")
         time.sleep(1.5)

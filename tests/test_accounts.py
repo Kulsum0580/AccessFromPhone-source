@@ -196,7 +196,7 @@ def test_a_phone_can_rename_and_sign_itself_out(both):
     assert phone.post("/api/device/rename", json={"name": "Kitchen tablet"}, headers=h).json()["name"] == "Kitchen tablet"
     assert phone.delete("/api/device", headers=h).status_code == 200
     assert phone.get("/api/jobs", headers=h).status_code == 401
-    assert admin.get("/admin/devices").json() == []
+    assert [d["signed_out"] for d in admin.get("/admin/devices").json()] == [True]
 
 
 def test_pairing_events_reach_the_audit_trail(both):
@@ -204,7 +204,7 @@ def test_pairing_events_reach_the_audit_trail(both):
     sign_up(admin)
     token = pair(phone, admin, "Afza's iPhone")
     events = {e["event"] for e in phone.get("/api/audit", headers={"x-token": token}).json()}
-    assert {"owner_setup", "device_paired"} <= events
+    assert "device_paired" in events   # this phone's own pairing; the PC owner's setup is not its business
 
 
 def test_the_pc_page_needs_the_password_and_the_page_header(both):
@@ -238,7 +238,7 @@ def test_pairing_returns_a_qr_code_and_a_link_with_the_code(both):
     _, admin, _ = both
     sign_up(admin)
     r = admin.post("/admin/pairing", headers=H).json()
-    assert "<svg" in r["svg"] and r["link"].endswith("/?pair=" + r["code"]) and r["expires_in"] == 120
+    assert "<svg" in r["svg"] and r["link"].endswith("/#pair=" + r["code"]) and r["expires_in"] == 120
 
 
 def test_an_older_accounts_file_moves_into_the_database_once(tmp_path):
@@ -357,3 +357,36 @@ def test_a_phone_can_prove_the_owner_password_to_reset_its_app_pin(both):
     assert phone.post("/api/owner/check", headers={"x-token": token}, json={"password": "nope nope"}).status_code == 403
     assert phone.post("/api/owner/check", headers={"x-token": token}, json={"password": PASSWORD}).json() == {"ok": True}
     assert phone.post("/api/owner/check", json={"password": PASSWORD}).status_code == 401  # a phone that isn't signed in can't ask
+
+
+def test_each_phone_sees_only_its_own_requests_and_record(both):
+    phone, admin, _ = both
+    sign_up(admin)
+    a, b = pair(phone, admin, "Phone A"), pair(phone, admin, "Phone B")
+    job = phone.post("/api/jobs", json={"prompt": "list my files"}, headers={"x-token": a}).json()
+    assert [j["id"] for j in phone.get("/api/jobs", headers={"x-token": a}).json()] == [job["id"]]
+    assert phone.get("/api/jobs", headers={"x-token": b}).json() == []
+    assert phone.get(f"/api/jobs/{job['id']}", headers={"x-token": b}).status_code == 404
+    assert phone.post(f"/api/jobs/{job['id']}/stop", headers={"x-token": b}).status_code in (404, 409)   # 409: it is not B's turn at all
+    assert phone.post(f"/api/jobs/{job['id']}/approve", headers={"x-token": b}).status_code in (404, 409)
+    mine = {e.get("job") for e in phone.get("/api/audit", headers={"x-token": a}).json()}
+    theirs = {e.get("job") for e in phone.get("/api/audit", headers={"x-token": b}).json()}
+    assert job["id"] in mine and job["id"] not in theirs
+
+
+def test_the_same_phone_signing_out_and_back_in_is_not_a_new_phone(both):
+    phone, admin, _ = both
+    sign_up(admin)
+
+    def claim(install, name="Afza's phone"):
+        code = admin.post("/admin/pairing", headers=H).json()["code"]
+        return phone.post("/pair/claim", json={"code": code, "name": name, "install": install}).json()
+
+    first = claim("install-A")
+    phone.delete("/api/device", headers={"x-token": first["token"]})
+    again = claim("install-A")
+    assert again["device"]["id"] == first["device"]["id"] and again["device"]["name"] == "Afza's phone"
+    assert len(admin.get("/admin/devices").json()) == 1
+    assert phone.get("/api/jobs", headers={"x-token": first["token"]}).status_code == 401   # the old token stays dead
+    other = claim("install-B", "Someone else")
+    assert other["device"]["id"] != first["device"]["id"] and len(admin.get("/admin/devices").json()) == 2

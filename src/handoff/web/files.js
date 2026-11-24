@@ -38,6 +38,7 @@
     grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
     open: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
     lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/>',
   };
 
   function icon(name) {
@@ -64,7 +65,7 @@
     return d.toLocaleDateString([], opts);
   }
 
-  const ACCESS = { writable: "Read and change", read_only: "Read only", granted: "Allowed by you", granted_change: "Allowed by you, can edit" };
+  const ACCESS = { writable: "Read and change", read_only: "Read only", granted: "Allowed by you", granted_change: "Allowed by you, can edit", shared: "Shared with you", shared_change: "Shared with you, can edit" };
   const plural = (n, one, many) => n + " " + (n === 1 ? one : many);
 
   function mount(host, o) {
@@ -207,9 +208,16 @@
       }
     }
 
+    /* On the Admin phone a place also says which phone allowed it and who else has it. */
+    function rootSub(e) {
+      if (!e.shareable) return ACCESS[e.access] || "";
+      const who = (e.owners || []).join(", ") || "A phone", shared = e.shared_with || [];
+      return "Allowed by " + who + " · " + (shared.length ? "Shared with " + shared.join(", ") : "Not shared");
+    }
+
     function row(e) {
       const folder = e.kind === "folder";
-      const sub = e.type === "root" ? (ACCESS[e.access] || "") : folder ? fmtDate(e.modified) : [fmtSize(e.size), fmtDate(e.modified)].filter(Boolean).join(" · ");
+      const sub = e.type === "root" ? rootSub(e) : folder ? fmtDate(e.modified) : [fmtSize(e.size), fmtDate(e.modified)].filter(Boolean).join(" · ");
       const main = h("button", { class: "fb-main", type: "button", role: "listitem", "aria-label": (folder ? "Folder " : "File ") + e.name },
         h("span", { class: "fb-ic t-" + e.type }, icon(e.type)),
         h("span", { class: "fb-text" }, h("b", { class: "fb-name", text: e.name }),
@@ -222,7 +230,7 @@
       for (const ev of ["touchend", "touchmove", "touchcancel"]) main.addEventListener(ev, () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }, { passive: true });
       main.addEventListener("contextmenu", (ev) => { ev.preventDefault(); menu(e); });
       const dots = h("button", { class: "iconbtn fb-dots", type: "button", "aria-label": "More for " + e.name, title: "More", onclick: () => { ctx.haptic("tick"); menu(e); } }, icon("more"));
-      const el = h("div", { class: "fb-row" + (e.hidden ? " is-hidden" : "") }, main, e.type === "root" ? null : dots);
+      const el = h("div", { class: "fb-row" + (e.hidden ? " is-hidden" : "") }, main, e.type === "root" && !e.shareable ? null : dots);
       return el;
     }
 
@@ -279,6 +287,7 @@
       if (folder) items.push(item("image", "Pictures in this folder", () => ctx.openGallery(e.path)));
       items.push(item("copy", "Copy path", () => ctx.copy(e.path)));
       items.push(item("info", "Details", () => details(e)));
+      if (e.shareable && ctx.shareFolder) items.push(item("share", "Share", () => ctx.shareFolder(e.path, () => load(st.path))));
       overlay = h("div", { class: "fb-overlay fb-sheet-wrap", onclick: (ev) => { if (ev.target === overlay) closeOverlay(); } },
         h("div", { class: "fb-sheet", role: "menu", "aria-label": "Actions for " + e.name },
           h("div", { class: "fb-sheet-title" }, h("b", { text: e.name }), h("span", { text: e.path })), ...items));
@@ -291,7 +300,7 @@
       overlay = h("div", { class: "fb-overlay fb-sheet-wrap", onclick: (ev) => { if (ev.target === overlay) closeOverlay(); } },
         h("div", { class: "fb-sheet", role: "dialog", "aria-label": "Details" },
           h("div", { class: "fb-sheet-title" }, h("b", { text: e.name })),
-          row2("Where", e.path), row2("Kind", e.kind === "folder" ? "Folder" : e.type), e.kind === "folder" ? null : row2("Size", fmtSize(e.size) + " (" + e.size.toLocaleString() + " bytes)"),
+          row2("Where", e.path), e.shareable ? row2("Allowed by", (e.owners || []).join(", ")) : null, e.shareable ? row2("Shared with", (e.shared_with || []).join(", ") || "No one") : null, row2("Kind", e.kind === "folder" ? "Folder" : e.type), e.kind === "folder" ? null : row2("Size", fmtSize(e.size) + " (" + e.size.toLocaleString() + " bytes)"),
           row2("Changed", e.modified ? new Date(e.modified * 1000).toLocaleString() : "—"),
           h("div", { class: "actions", style: "margin-top:12px" }, h("button", { class: "btn", type: "button", onclick: closeOverlay }, "Close"))));
       host.append(overlay);

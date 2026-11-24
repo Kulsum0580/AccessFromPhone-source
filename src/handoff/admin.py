@@ -22,6 +22,7 @@ from . import sysinfo
 from .config import Settings
 from .connect import qr_svg
 from .connectivity import Anywhere, lan_base, mac_address
+from .access import levels
 from .jobs import JobManager
 from .unlock import UnlockError
 
@@ -53,6 +54,27 @@ class PairIn(BaseModel):
     via: Literal["lan", "anywhere"] = "lan"  # which address the QR code holds
 
 
+class ScreenDecideIn(BaseModel):
+    device_id: str = Field(min_length=1, max_length=64)
+    allow: bool = True
+    control: bool = False  # also let it move the mouse and type (only on the PC page: the desktop window offers looking only)
+    kind: str = Field(default="look", pattern="^(look|control)$")  # which kind of request is being answered
+    minutes: int = Field(default=15, ge=0, le=7 * 24 * 60)  # 0: until the Owner takes it back
+
+
+class DeviceIdIn(BaseModel):
+    device_id: str = Field(min_length=1, max_length=64)
+
+
+class AdminPhoneIn(BaseModel):
+    device_id: str | None = Field(default=None, max_length=64)  # None: no Admin phone
+
+
+class LevelIn(BaseModel):
+    device_id: str = Field(min_length=1, max_length=64)
+    level: str = Field(min_length=1, max_length=20)
+
+
 class NameIn(BaseModel):
     name: str = Field(min_length=1, max_length=40)
 
@@ -63,6 +85,16 @@ _ACTIVITY = {
     "unlock_removed": ("Removed the saved sign-in", "warn"), "unlock_resumed": ("Started unlocking again", "ok"), "unlock_setup_opened": ("Opened the unlock setup", "ok"),
     "admin_login": ("Signed in to this page", "ok"), "admin_login_failed": ("A wrong password was tried on this page", "bad"),
     "pair_failed": ("A phone tried a wrong code", "warn"), "expired": ("A request ran out of time", "warn"), "undone": ("Undid a change", "ok"),
+    "paused": ("Phone access was paused", "bad"), "resumed": ("Phone access was resumed", "ok"), "suspicious": ("Several wrong tries in a few minutes", "bad"),
+    "session_started": ("A phone started using this PC", "ok"), "session_ended": ("A phone's turn on this PC ended", "ok"),
+    "takeover_requested": ("A phone asked for a turn", "warn"), "takeover_answered": ("A request for a turn was answered", "ok"),
+    "screen_requested": ("A phone asked to see this PC's screen", "warn"), "screen_allowed": ("Screen viewing was allowed for a phone", "warn"),
+    "screen_denied": ("A request to see the screen was denied", "ok"), "screen_started": ("A phone started viewing this PC's screen", "warn"),
+    "screen_stopped": ("Screen viewing ended", "ok"), "screen_revoked": ("Screen viewing was taken back", "ok"),
+    "screen_control_requested": ("A phone asked to control this PC", "warn"), "screen_control_allowed": ("Controlling this PC was allowed for a phone", "bad"),
+    "screen_control_denied": ("A request to control this PC was denied", "ok"),
+    "screen_control_started": ("A phone took control of this PC's mouse and keyboard", "bad"), "screen_control_stopped": ("A phone gave control back", "ok"),
+    "level_changed": ("A phone's access level was changed", "warn"), "admin_changed": ("The Admin phone was changed", "warn"),
 }
 
 
@@ -209,8 +241,99 @@ def create_admin_app(settings: Settings, accounts: AccountStore, manager: JobMan
         else:
             base = lan_base(settings.server, settings.connectivity)
         code, seconds = accounts.new_pairing_code()
-        link = f"{base}/?pair={code}"
+        link = f"{base}/#pair={code}"  # after the #: a browser never sends that part to a server, so no proxy or relay log can hold the code
         return {"code": code, "link": link, "svg": qr_svg(link), "expires_in": seconds, "via": via}
+
+    @app.get("/admin/pause", dependencies=[Depends(need_session)])
+    def pause_state() -> dict:
+        """Whether phone access is paused, and by whom."""
+        return manager.pause_switch.info()
+
+    @app.post("/admin/pause/start", dependencies=[Depends(need_session)])
+    def pause_start() -> dict:
+        manager.pause_switch.pause("this PC")
+        manager.note("paused", by="this PC")
+        manager.access.sessions.end_all("paused")
+        manager.screen.stop_all("paused")
+        return manager.pause_switch.info()
+
+    # -- looking at this PC's screen: only the Owner, here, says yes (or pre-approves a phone), and can stop it at once
+    def screen_state() -> dict:
+        scr = manager.screen
+        names = {d["id"]: d["name"] for d in accounts.devices()}
+        admin_id = manager.access.store.admin_id()
+        return {"enabled": scr.cfg.enabled, "pending": scr.pending(), "viewing": scr.viewing(), "panic": scr.panic_hint, "admin_id": admin_id if scr.trusted(admin_id or "") else None,
+                "grants": [{**g, "name": names.get(g["device_id"], "a removed phone")} for g in scr.grants()]}
+
+    @app.get("/admin/screen", dependencies=[Depends(need_session)])
+    def screen_info() -> dict:
+        return screen_state()
+
+    @app.post("/admin/screen/decide", dependencies=[Depends(need_session)])
+    def screen_decide(body: ScreenDecideIn) -> dict:
+        if not manager.screen.decide(body.device_id, body.allow, body.minutes, body.kind):
+            raise HTTPException(status_code=409, detail="That request was already answered, or timed out.")
+        return screen_state()
+
+    @app.post("/admin/screen/grant", dependencies=[Depends(need_session)])
+    def screen_grant(body: ScreenDecideIn) -> dict:
+        if accounts.get(body.device_id) is None:
+            raise HTTPException(status_code=404, detail="That phone is not paired any more.")
+        manager.screen.grant(body.device_id, body.minutes, body.control)
+        manager.note("screen_allowed", device=accounts.get(body.device_id).name, device_id=body.device_id, minutes=body.minutes, control=body.control, by="this PC")
+        return screen_state()
+
+    @app.post("/admin/screen/revoke", dependencies=[Depends(need_session)])
+    def screen_revoke(body: DeviceIdIn) -> dict:
+        manager.screen.revoke(body.device_id)
+        manager.note("screen_revoked", device_id=body.device_id, by="this PC")
+        return screen_state()
+
+    @app.post("/admin/screen/stop", dependencies=[Depends(need_session)])
+    def screen_stop() -> dict:
+        manager.screen.stop_all("stopped on this PC")
+        return screen_state()
+
+    # -- who may do what, and who is using the PC. Only here (on this PC) can the Admin phone be chosen or a phone's own level be set to anything.
+    def access_state() -> dict:
+        acc = manager.access
+        return {"people": acc.store.people(), "session": acc.sessions.view(""),
+                "levels": [{"id": k, "name": levels.NAMES[k]} for k in levels.GRANTABLE], "enabled": settings.access.enabled}
+
+    @app.get("/admin/access", dependencies=[Depends(need_session)])
+    def access_info() -> dict:
+        return access_state()
+
+    @app.post("/admin/access/admin", dependencies=[Depends(need_session)])
+    def access_set_admin(body: AdminPhoneIn) -> dict:
+        if body.device_id is not None and accounts.get(body.device_id) is None:
+            raise HTTPException(status_code=404, detail="That phone is not paired any more.")
+        manager.access.store.set_admin(body.device_id)
+        manager.note("admin_changed", device=accounts.get(body.device_id).name if body.device_id else "nobody", device_id=body.device_id or "", by="this PC")
+        return access_state()
+
+    @app.post("/admin/access/level", dependencies=[Depends(need_session)])
+    def access_set_level(body: LevelIn) -> dict:
+        if accounts.get(body.device_id) is None:
+            raise HTTPException(status_code=404, detail="That phone is not paired any more.")
+        try:
+            manager.access.store.set_level(body.device_id, body.level)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from None
+        manager.note("level_changed", device=accounts.get(body.device_id).name, device_id=body.device_id, level=body.level, by="this PC")
+        return access_state()
+
+    @app.post("/admin/session/end", dependencies=[Depends(need_session)])
+    def session_end() -> dict:
+        manager.access.sessions.release("this PC")
+        return access_state()
+
+    @app.post("/admin/pause/resume", dependencies=[Depends(need_session)])
+    def pause_resume() -> dict:
+        """The only way to turn phone access back on: signed in on this PC, on this page. A phone can never do it."""
+        manager.pause_switch.resume()
+        manager.note("resumed", by="this PC")
+        return manager.pause_switch.info()
 
     @app.get("/admin/status", dependencies=[Depends(need_session)])
     def pc_status() -> dict:
@@ -233,7 +356,7 @@ def create_admin_app(settings: Settings, accounts: AccountStore, manager: JobMan
     def unlock_status() -> dict:
         """Whether unlocking this PC from a phone is set up and on. Setting it up is done at the PC, by an administrator, not from this page."""
         info = manager.unlocker.status()
-        return {k: info.get(k) for k in ("running", "configured", "enabled", "kind", "attention", "locked_for", "locked")}
+        return {k: info.get(k) for k in ("running", "configured", "enabled", "kind", "attention", "locked_for", "locked", "auto_resume_in", "auto_resumes_left")}
 
     @app.post("/admin/unlock/disable", dependencies=[Depends(need_session)])
     def unlock_disable() -> dict:
@@ -253,7 +376,8 @@ def create_admin_app(settings: Settings, accounts: AccountStore, manager: JobMan
         from .unlock import setup as unlock_setup_module
 
         if not unlock_setup_module.relaunch_elevated(["gui"], windowed=True):
-            raise HTTPException(status_code=409, detail="Windows didn't give administrator rights (the prompt was declined or blocked), so the setup window didn't open.")
+            why = unlock_setup_module.elevation_refusal_reason()
+            raise HTTPException(status_code=409, detail=why or "Windows didn't give administrator rights (the prompt was declined or blocked), so the setup window didn't open.")
         manager.note("unlock_setup_opened")
         return {"ok": True}
 

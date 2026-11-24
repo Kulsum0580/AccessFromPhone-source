@@ -51,7 +51,7 @@ push:                              # a notice on the phone when a plan is ready 
   # credentials_file: C:\\path\\to\\.env   # an existing file holding VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, FIREBASE_SERVICE_ACCOUNT_PATH (read, never copied)
 
 power:
-  remote_actions: [lock, sleep]    # what the phone may ask this PC to do (each one still needs your approval)
+  remote_actions: [lock, screen_off, sleep]    # what the phone may ask this PC to do (each one still needs your approval)
   keep_awake: true
 
 storage:

@@ -43,6 +43,10 @@
     panel: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/>',
+    users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14.5c2.2 0 4 1.8 4 4"/>',
+    zoomin: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6M11 8v6"/>',
+    zoomout: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6"/>',
     sliders: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
     mic: '<rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
     keyboard: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
@@ -61,6 +65,7 @@
     globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
     volume: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>',
     volumeOff: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="m17 9 5 6M22 9l-5 6"/>',
+    volumeLow: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 10a3 3 0 0 1 0 4"/>',
     shield: '<path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/>',
     folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
     terminal: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m6 9 3 3-3 3M12 15h5"/>',
@@ -80,6 +85,9 @@
     cloud: '<path d="M7 18a5 5 0 1 1 1-9.9A6 6 0 0 1 19 11a3.5 3.5 0 0 1-1 7z"/>',
     move: '<path d="M5 12h14M13 6l6 6-6 6"/>',
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    monitor: '<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
+    pointer: '<path d="M5 3l14 7-6 2-2 6z"/><path d="M13 12l5 6"/>',
+    pad: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 14h18M12 14v6"/>',
     battery: '<rect x="2" y="7" width="18" height="10" rx="2.5"/><path d="M22 10.5v3"/><rect x="4.5" y="9.5" width="8" height="5" rx="1" fill="currentColor" stroke="none"/>',
     bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
     plug: '<path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/>',
@@ -97,6 +105,16 @@
     textMinus: '<path d="M3 18 8 6l5 12M4.8 14h6.4M16 11h5"/>',
     textPlus: '<path d="M3 18 8 6l5 12M4.8 14h6.4M18.5 8.5v5M16 11h5"/>',
     scan: '<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"/>',
+    inbox: '<path d="M3 13l3-8h12l3 8v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 13h5l1 2h6l1-2h5"/>',
+    note: '<path d="M5 3h14v18H5z"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+    printer: '<path d="M7 9V3h10v6"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M7 14h10v7H7z"/>',
+    star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/>',
+    sunDim: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',
+    next: '<path d="M5 5l10 7-10 7z"/><path d="M19 5v14"/>',
+    prev: '<path d="M19 5 9 12l10 7z"/><path d="M5 5v14"/>',
+    clipboard: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/>',
   };
   function ico(name, size) {
     const s = h("span", { class: "ico", "aria-hidden": "true" });
@@ -142,6 +160,7 @@
 
   const DEFAULTS = {
     name: "", theme: "dark", accent: "cyan", text: "m", reduceMotion: false,
+    motion: "",   // "full" (3D), "simple" (same look, flat and gentle) or "off". "" = chosen for this phone automatically (see motionLevel)
     haptics: true, ticks: false, sounds: true,
     input: "auto", hold: "hold", lang: "en-IN", autoSend: true, speak: "voice", rate: 1,
     openTrails: false, editorWrap: false, editorSize: 13,
@@ -154,16 +173,40 @@
   const Saved = window.AfpOffline ? window.AfpOffline.create() : { init: () => Promise.resolve(null), has: () => false, current: () => null, load: () => Promise.resolve(null), queue() {}, clear: () => Promise.resolve(), save: () => Promise.resolve(null) };
   const savedReady = Saved.init();
 
+  // Requests typed while the PC can't be reached wait here, on this phone (queue.js). If that file did not load, there is simply no queue.
+  const Q = window.AfpQueue ? window.AfpQueue.create() : null;
+
+  // Who is using the PC, and the "may I have a turn?" question (access.js). It is given the page's helpers, and keeps its own state.
+  const Access = window.AfpAccess ? window.AfpAccess.create({
+    h, ico, ask, toast, haptic, openSheet, ago,
+    api: (path, opts) => api(path, opts),
+    sect: (text) => sect(text),
+    bar: () => $("#sessionBar"), tab: () => $('#tabbar .tab[data-tab="access"]'), layer: () => $("#layer"),
+    openScreen: () => { if (Screen) Screen.open(); },
+  }) : null;
+
+  // Looking at the PC's screen, view only, with the owner's yes (screen.js).
+  const Screen = window.AfpScreen ? window.AfpScreen.create({ h, ico, toast, haptic, openSheet, token: () => S.token, api: (path, opts) => api(path, opts), allowFolder: async (folder) => { const out = await (await api("/access/grant", { method: "POST", body: JSON.stringify({ path: folder, change: false }) })).json(); if (S.info) { S.info.folders.granted_details = out.granted; S.info.folders.granted = out.granted.map((g) => g.path); } }, download: (path, size) => DL.startAndWatch(path, size) }) : null;
+
   const ACCENTS = [["cyan", "#22d3ee", "#3b82f6"], ["violet", "#a78bfa", "#6366f1"], ["green", "#34d399", "#0ea5a4"], ["amber", "#fbbf24", "#f97316"], ["rose", "#fb7185", "#e11d48"]];
   const darkQuery = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
+  /* Graphics and motion. "full" = 3D depth and tilt; "simple" = the same look, flat, with gentle movement; "off" = nothing moves.
+     Unless the person chose, a phone set to "remove animations" starts on Off, one that says it is low-end (little memory or few cores) on Simple, and the rest on Full. */
+  const autoMotion = () => {
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return "off";
+    const lowMemory = navigator.deviceMemory && navigator.deviceMemory <= 2, lowCpu = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2;
+    return lowMemory || lowCpu ? "simple" : "full";
+  };
+  const motionLevel = () => ["full", "simple", "off"].includes(cfg.motion) ? cfg.motion : cfg.reduceMotion ? "off" : autoMotion();
   function applyLook() {
     const dark = cfg.theme === "dark" || (cfg.theme === "system" && darkQuery && darkQuery.matches);
     root.dataset.theme = dark ? "dark" : "light";
     root.dataset.accent = cfg.accent;
     root.dataset.text = cfg.text;
-    if (cfg.reduceMotion) root.dataset.motion = "off"; else delete root.dataset.motion;
+    const level = motionLevel();
+    if (level === "full") delete root.dataset.motion; else root.dataset.motion = level;
     const meta = $("#themeColor");
-    if (meta) meta.setAttribute("content", dark ? "#060b16" : "#f1f6fd");
+    if (meta) meta.setAttribute("content", dark ? "#0b111b" : "#f1f6fd");
   }
   if (darkQuery && darkQuery.addEventListener) darkQuery.addEventListener("change", () => { if (cfg.theme === "system") applyLook(); });
 
@@ -233,8 +276,10 @@
   const powerWaiting = new Set(), powerHeard = new Set();
   /** "lock", "unlock" or "": from the step's own name, or (a PC that is not updated yet) from its description. */
   const powerKind = (s) => s.power === "lock" || s.power === "unlock" ? s.power : /sign-in at the lock screen/i.test(s.detail || "") ? "unlock" : /lock the screen/i.test(s.detail || "") ? "lock" : "";
+  const screenSynced = new Set();
   function powerSounds() {
     for (const j of S.jobs) {
+      if (j.status === "done" && !screenSynced.has(j.id) && (j.steps || []).some((s) => s.action === "power" && /black/i.test(s.detail || ""))) { screenSynced.add(j.id); loadInfo(); }   // the Home button now says the opposite
       const step = (j.steps || []).map((s) => (s.action === "power" ? { power: powerKind(s) } : null)).find((s) => s && s.power);
       if (!step || powerHeard.has(j.id)) continue;
       if (j.status === "done") { powerHeard.add(j.id); if (powerWaiting.has(j.id) || S.mine.has(j.id)) { powerWaiting.delete(j.id); chime(step.power); haptic("success"); } }
@@ -249,7 +294,7 @@
     token: store.raw("afp_token"),
     jobs: [], audit: [], info: null, loaded: false, online: true, failures: 0,
     conv: store.raw("afp_conv"), query: "", model: null,
-    hidden: new Set(store.get("afp_hidden", [])), titles: store.get("afp_titles", {}),
+    hidden: new Set(store.get("afp_hidden", [])), titles: store.get("afp_titles", {}), autoTitles: store.get("afp_autotitles", {}), titleAsked: new Set(),
     nodes: new Map(), threadConv: null, firstPaint: true, stick: true, hero: null,
     mine: new Set(), voiceJobs: new Set(), spoken: new Set(), seen: new Map(),
     muted: store.get("afp_muted", false), speaking: false,
@@ -264,8 +309,11 @@
   // A pairing link (the PC's QR code) carries a one-time code; it is claimed once the page is up, then it leaves the address bar.
   const nameFromUrl = (urlParams.get("name") || "").trim().slice(0, 40);  // the app passes what the person called this phone on its connect screen
   if (nameFromUrl) store.setRaw("afp_device", nameFromUrl);
-  const pairFromUrl = urlParams.get("pair") || "";
-  if (pairFromUrl) history.replaceState(history.state, "", location.pathname + location.hash);
+  // The code travels after the # (a browser never sends that to a server, so no proxy or relay log can hold it). An older QR code still has it as ?pair=, so both work.
+  const pairInHash = /(?:^#\/?|&)pair=([A-Za-z0-9-]{8,12})(?:&|$)/.exec(location.hash);
+  const pairFromUrl = (pairInHash ? pairInHash[1] : urlParams.get("pair")) || "";
+  window.addEventListener("hashchange", () => { if (/(?:^#\/?|&)pair=/.test(location.hash)) location.reload(); });  // a pairing link opened in a page that is already open: start over with it
+  if (pairFromUrl) history.replaceState(history.state, "", location.pathname + (pairInHash ? "" : location.hash));
 
   /* ===================================================================== api */
 
@@ -296,9 +344,9 @@
 
   /* ===================================================================== data model */
 
-  const LABEL = { planning: "Thinking", running: "Running", stopped: "Stopped", needs_access: "Needs your OK", awaiting_approval: "Needs your approval", done: "Done", rejected: "Rejected", failed: "Failed", undone: "Undone", expired: "Expired" };
+  const LABEL = { planning: "Planning", running: "Running", stopped: "Stopped", needs_access: "Waiting for access", awaiting_approval: "Waiting for approval", done: "Done", rejected: "Rejected", failed: "Failed", undone: "Undone", expired: "Expired" };
   const EVENT = {
-    submitted: ["Request received"], awaiting_approval: ["Waiting for your approval", "wait"], approved: ["You approved", "good"],
+    submitted: ["Request received"], awaiting_approval: ["Waiting for approval", "wait"], approved: ["You approved", "good"],
     rejected: ["You rejected", "bad"], expired: ["Approval expired", "bad"], replied: ["Replied", "good"], done: ["Finished", "good"],
     failed: ["Failed", "bad"], stopped: ["You stopped it", "wait"],
     access_requested: ["Asked to open a folder", "wait"], access_granted: ["You allowed a folder", "good"],
@@ -367,7 +415,8 @@
       for (const c of ordered) if (new Date(c.first) <= new Date(d.time)) target = c;
       (target || ordered[0] || { notes: [] }).notes.push(d);
     }
-    for (const c of ordered) c.title = S.titles[c.id] || clip(c.turns[0].prompt.replace(/\s+/g, " "), 60);
+    // A chat's name: the one you typed, else the one this PC's own model wrote, else one made on the phone from the first request's words.
+    for (const c of ordered) c.title = S.titles[c.id] || S.autoTitles[c.id] || (window.AfpTitles ? window.AfpTitles.make(c.turns[0].prompt) : clip(c.turns[0].prompt.replace(/\s+/g, " "), 60));
     const convs = ordered.slice().sort((a, b) => new Date(b.last) - new Date(a.last));
     return { convs, byId };
   }
@@ -449,17 +498,18 @@
   // Sheets keep the browser's Back button useful: Back closes the sheet instead of leaving the page.
   let ignorePops = 0;
   function openSheet({ title, body, full = false, route = "sheet", push = true, guard = null, onClose = null }) {
-    const wrap = h("div", { class: "sheet-wrap" });
-    const sheet = h("div", { class: "sheet" + (full ? " full" : ""), role: "dialog", "aria-modal": "true", "aria-label": title });
+    const wrap = h("div", { class: "sheet-wrap", "data-route": route });   // (the route lets the stylesheet tell the PC screen's own sheet from a sheet opened over it)
+    const sheet = h("div", { class: "sheet" + (full ? " full" : ""), role: "dialog", "aria-modal": "true", "aria-label": title, tabindex: "-1" });
     const inner = h("div", { class: "sheet-body" }, body);
     sheet.append(h("div", { class: "sheet-grip" }),
       h("div", { class: "sheet-head" }, h("h2", { text: title }), h("button", { class: "iconbtn", type: "button", "aria-label": "Close", onclick: () => closeSheet() }, ico("x"))), inner);
     wrap.append(sheet);
     wrap.addEventListener("pointerdown", (e) => { if (e.target === wrap) closeSheet(); });
     $("#layer").append(wrap);
-    const rec = { wrap, route, pushed: push, guard, onClose };
+    const rec = { wrap, route, pushed: push, guard, onClose, opener: document.activeElement };
     S.sheets.push(rec);
     if (push) history.pushState({ sheet: route }, "", "#/" + route);
+    sheet.focus({ preventScroll: true });
     haptic("light");
     return { body: inner, close: closeSheet };
   }
@@ -475,8 +525,10 @@
     if (!rec) return null;
     if (rec.custom) { if (rec.onClose) rec.onClose(); return rec; }
     rec.wrap.classList.add("out");
+    rec.wrap.inert = true;
     setTimeout(() => rec.wrap.remove(), 200);
     if (rec.onClose) rec.onClose();
+    if (rec.opener && rec.opener.isConnected) rec.opener.focus({ preventScroll: true });
     return rec;
   }
   function closeSheet() {
@@ -491,7 +543,7 @@
   window.addEventListener("popstate", () => {
     if (ignorePops > 0) { ignorePops -= 1; return; }
     if (S.dialog) { S.dialog(false); undoPop(); return; }
-    const scanner = $(".scan"), scanX = scanner && $(".scan-x", scanner);
+    const scanner = $(".scan[role='dialog']"), scanX = scanner && $(".scan-x", scanner);
     if (scanX && scanner.offsetParent !== null) { scanX.click(); undoPop(); return; }
     if (openMenu) { closeMenu(); undoPop(); return; }
     const tour = $(".onb");
@@ -515,10 +567,13 @@
       const box = h("div", { class: "dlg " + tone, role: "alertdialog", "aria-modal": "true", "aria-label": title },
         h("div", { class: "dlg-ico" }, ico(icon, 26)), h("h2", { text: title }), message ? h("p", { text: message }) : null, h("div", { class: "dlg-btns" + (cancel ? "" : " one") }, no, yes));
       wrap.append(box);
+      const opener = document.activeElement;
       let done = false;
       const finish = (v) => {
         if (done) return; done = true; S.dialog = null;
         wrap.classList.add("out"); setTimeout(() => wrap.remove(), 160);
+        wrap.inert = true;
+        if (opener && opener.isConnected) opener.focus({ preventScroll: true });
         if (v) haptic(tone === "danger" ? "medium" : "light");
         resolve(v);
       };
@@ -555,7 +610,7 @@
       h("input", { type: "search", placeholder: "Search chats", "aria-label": "Search chats", value: S.query, oninput: (e) => { S.query = e.target.value; update(true); } }));
     $("#side").replaceChildren(
       h("div", { class: "side-head" },
-        h("div", { class: "brand" }, glyph(26), h("span", { class: "brand-name", text: "ACCESS" })),
+        h("div", { class: "brand" }, glyph(26), h("span", { class: "brand-name", text: "AccessFromPhone" })),
         h("button", { class: "iconbtn only-mobile", type: "button", "aria-label": "Close menu", onclick: closeDrawer }, ico("x"))),
       h("button", { class: "newchat", type: "button", onclick: newChat }, ico("plus"), "New chat"),
       search, S.sideList, S.sideFoot);
@@ -565,7 +620,7 @@
     if (!S.sideList) sideShell();
     const q = S.query.trim().toLowerCase();
     const convs = S.model.convs.filter((c) => !S.hidden.has(c.id) && (!q || c.title.toLowerCase().includes(q) || c.turns.some((t) => t.prompt.toLowerCase().includes(q))));
-    const sig = JSON.stringify([convs.map((c) => [c.id, c.title, c.last]), S.conv, q, displayName(), S.online, S.loaded, S.info && S.info.pc, S.muted, PC.data && PC.data.battery ? [PC.data.battery.percent, PC.data.battery.plugged] : PC.data ? 1 : 0]);
+    const sig = JSON.stringify([convs.map((c) => [c.id, c.title, c.last]), S.conv, q, displayName(), S.online, S.loaded, S.info && S.info.pc, S.muted]);
     if (sig === S.sideSig) return;
     S.sideSig = sig;
 
@@ -591,7 +646,7 @@
     const profile = h("div", { class: "profile", role: "button", tabindex: "0", "aria-label": "Profile and settings", onclick: open,
       onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(e); } } },
       h("span", { class: "av-wrap" }, avatar(), h("i", { class: "av-dot", "data-s": state })),
-      h("span", { class: "profile-text" }, h("div", { class: "profile-top" }, h("span", { class: "profile-name", text: displayName() }), pcChip("mini")),
+      h("span", { class: "profile-text" }, h("div", { class: "profile-top" }, h("span", { class: "profile-name", text: displayName() })),
         h("div", { class: "profile-sub" }, h("b", { class: "st", "data-s": state, text: S.online ? "Connected" : "Offline" }),
           S.online ? h("span", { class: "pcname", text: pc }) : null)));
     S.sideFoot.replaceChildren(h("div", { class: "profile-row" }, profile, speaks ? muteButton() : null));
@@ -624,12 +679,14 @@
   function openDrawer() { document.body.classList.add("drawer"); $("#scrim").hidden = false; haptic("tick"); }
   function closeDrawer() { document.body.classList.remove("drawer"); $("#scrim").hidden = true; }
   function newChat() {
-    S.conv = newId(); store.setRaw("afp_conv", S.conv); closeDrawer(); haptic("light"); S.stick = true; update(true);
+    S.conv = newId(); store.setRaw("afp_conv", S.conv); closeDrawer(); haptic("light"); S.stick = true;
+    if (S.tab !== "chat") setTab("chat"); else update(true);
     const f = $(".field"); if (f) f.focus();
   }
   function openChat(id) {
     if (id !== S.conv) { S.conv = id; store.setRaw("afp_conv", id); S.stick = true; haptic("tick"); }
-    closeDrawer(); update(true);
+    closeDrawer();
+    if (S.tab !== "chat") setTab("chat"); else update(true);
   }
 
   /* ===================================================================== top bar */
@@ -640,7 +697,7 @@
     const kind = ai ? ai.kind : "none";
     const aiLabel = !ai ? "…" : kind === "hosted" ? `${ai.model} · hosted` : kind === "local" ? `${ai.model} · on this PC` : kind === "none" ? "No AI · typed commands" : "Custom AI";
     const speaks = "speechSynthesis" in window;
-    const sig = JSON.stringify([conv && conv.title, S.conv, aiLabel, kind, S.muted, speaks, displayName(), S.hidden.size, PC.data && PC.data.battery ? [PC.data.battery.percent, PC.data.battery.plugged] : PC.data ? 1 : 0]);
+    const sig = JSON.stringify([conv && conv.title, S.conv, aiLabel, kind, S.muted, speaks, displayName(), S.hidden.size, PC.data && PC.data.battery ? [PC.data.battery.percent, PC.data.battery.plugged] : PC.data ? 1 : 0, netKey()]);
     if (sig === S.topSig) return;
     S.topSig = sig;
     top.replaceChildren(
@@ -648,8 +705,8 @@
       h("button", { class: "iconbtn menu-btn", type: "button", "aria-label": "Open chats", onclick: openDrawer }, ico("menu")),
       h("button", { class: "iconbtn only-desk", type: "button", "aria-label": "Show or hide the chat list", onclick: toggleSide }, ico("panel")),
       h("div", { class: "top-title" }, glyph(26), h("h1", { text: conv && !S.hidden.has(conv.id) ? conv.title : "New chat" })),
-      h("button", { class: "chip-ai", type: "button", "data-kind": kind, title: ai ? ai.note : "", onclick: () => openSettings() }, ico(kind === "hosted" ? "cloud" : "cpu"), h("span", { class: "t", text: aiLabel })),
-      pcChip("only-collapsed"),
+      h("button", { class: "chip-ai", type: "button", "data-kind": kind, "aria-label": aiLabel + ". Open AI settings", title: ai ? ai.note : "", onclick: () => openSettings() }, ico(kind === "hosted" ? "cloud" : "cpu"), h("span", { class: "t", text: aiLabel })),
+      netChip("only-collapsed"), pcChip("only-collapsed"),
       h("button", { class: "iconbtn only-collapsed", type: "button", "aria-label": "New chat", onclick: newChat }, ico("plus")),
       speaks ? muteButton("only-collapsed") : null,
       h("button", { class: "iconbtn only-collapsed", type: "button", "aria-label": "Profile and settings", onclick: (e) => profileMenu(e.currentTarget) }, avatar()));
@@ -709,7 +766,7 @@
     const native = () => !!(window.AfpApp && window.AfpApp.partSize);
     let list = store.get("afp_dls", []);
     if (!Array.isArray(list)) list = [];
-    const running = new Set(), views = new Set();
+    const running = new Set(), views = new Set(), fillers = new Map();   // fillers: a view that draws itself (the live card on the screen view) instead of the whole list
     let pillTimer = 0, aliveAt = 0, sheet = null;
 
     const keyOf = (path) => { let a = 5381, b = 52711; for (const c of path.toLowerCase()) { a = ((a * 33) ^ c.charCodeAt(0)) >>> 0; b = (b * 31 + c.charCodeAt(0)) >>> 0; } return "d" + a.toString(36) + b.toString(36); };
@@ -808,9 +865,41 @@
       }
     }
 
+    /* A finished download lands on the phone: a file card appears in 3D, tilts, then shrinks and drops into a glowing tray at the bottom with a ripple.
+       Returns false (and does nothing) when the person asked their phone for less motion, or the browser cannot animate it. */
+    function land(name, landed, sub) {
+      const calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (calm || typeof Element.prototype.animate !== "function") return false;
+      document.querySelectorAll(".dlfx").forEach((n) => n.remove());
+      const ext = ((name.split(".").pop() || "").slice(0, 4) || "file").toUpperCase();
+      const card = h("div", { class: "dlfx-card" }, h("span", { class: "dlfx-file" }, ico("file", 30), h("em", { text: ext })), h("b", { text: name }), h("small", { text: sub || "Saved to this phone" }));
+      const tray = h("div", { class: "dlfx-tray" }), ring = h("div", { class: "dlfx-ring" }), ring2 = h("div", { class: "dlfx-ring" });
+      const fx = h("div", { class: "dlfx", "aria-hidden": "true" }, tray, card, ring, ring2);
+      document.body.append(fx);
+      // from where the card is to the tray. The box the animation lives in is measured, not the window: with the PC screen turned sideways in full screen the box is turned too (see app.css), so "down" is the phone's left edge there
+      const dy = Math.round(fx.offsetHeight - 54 - (card.offsetTop + card.offsetHeight / 2));
+      const at = (t, y, z, rx, ry, s, o) => ({ transform: `translate(-50%,-50%) translate3d(0,${y}px,${z}px) rotateX(${rx}deg) rotateY(${ry}deg) scale(${s})`, opacity: o, offset: t });
+      const fly = card.animate([
+        at(0, 46, -420, 38, -28, 0.55, 0), at(0.26, 0, 0, 10, 12, 1, 1), at(0.4, -4, 40, 4, -6, 1.04, 1),
+        at(0.62, dy * 0.45, -160, 38, 10, 0.55, 1), at(0.86, dy, -380, 78, -8, 0.16, 0.95), at(1, dy + 8, -420, 84, 0, 0.08, 0)],
+        { duration: 1500, easing: "cubic-bezier(.45,.05,.2,1)", fill: "forwards" });
+      const pulse = (el, delay) => el.animate([{ transform: "translateX(-50%) scale(0.2)", opacity: 0.9 }, { transform: "translateX(-50%) scale(2.6)", opacity: 0 }], { duration: 700, delay, easing: "ease-out", fill: "both" });
+      tray.animate([{ opacity: 0, transform: "translateX(-50%) scaleX(0.4)" }, { opacity: 1, transform: "translateX(-50%) scaleX(1)", offset: 0.5 }, { opacity: 0, transform: "translateX(-50%) scaleX(1.15)" }], { duration: 1500, easing: "ease-in-out", fill: "both" });
+      haptic("light");
+      const impact = setTimeout(() => { pulse(ring, 0); pulse(ring2, 130); haptic("success"); landed(); }, 1230);
+      const end = () => { clearTimeout(impact); fx.remove(); };
+      fly.onfinish = () => setTimeout(end, 700);
+      setTimeout(end, 3000);   // never left behind
+      return true;
+    }
+
     window.__afpSaved = (key, ok, uri) => {
       const d = list.find((x) => x.id === key); if (!d) return;
-      if (ok) { Object.assign(d, { state: "done", uri, got: d.size, err: "", finishedAt: Date.now() }); haptic("success"); toast("Saved to Downloads: " + d.name, window.AfpApp.openSaved ? { label: "Open", run: () => open(d) } : undefined); }
+      if (ok) {
+        Object.assign(d, { state: "done", uri, got: d.size, err: "", finishedAt: Date.now() });
+        const say = () => toast("Saved to Downloads: " + d.name, window.AfpApp.openSaved ? { label: "Open", run: () => open(d) } : undefined);
+        if (!land(d.name, say)) { haptic("success"); say(); }
+      }
       else { d.state = "failed"; d.err = "Couldn't copy it into Downloads (is the phone full?). The download is kept: free some space, then tap Retry."; haptic("error"); }
       save(); paint(true); pump();
     };
@@ -825,10 +914,11 @@
     function browserDownload(link) {
       const a = h("a", { href: link.url, download: link.name });
       document.body.append(a); a.click(); a.remove();
-      toast("Downloading " + link.name + " (" + fmtSize(link.size) + ")");
+      const say = () => toast("Downloading " + link.name + " (" + fmtSize(link.size) + ")");
+      if (!land(link.name, say, "Downloading to this device")) say();
     }
 
-    async function start(path) {
+    async function start(path, opts = {}) {
       haptic("light");
       if (!native()) {
         try { browserDownload(await (await api("/files/link?path=" + encodeURIComponent(path), { method: "POST" })).json()); haptic("success"); }
@@ -837,13 +927,34 @@
       }
       const id = keyOf(path);
       let d = list.find((x) => x.id === id);
-      if (d && (d.state === "running" || d.state === "queued" || d.state === "finishing")) { toast("Already downloading"); openDownloads(); return; }
+      if (d && (d.state === "running" || d.state === "queued" || d.state === "finishing")) { if (!opts.quiet) { toast("Already downloading"); openDownloads(); } return; }
       if (d && d.state === "done") { list = list.filter((x) => x !== d); d = null; }
-      if (!d) { d = { id, path, name: path.split(/[\\/]/).pop(), size: 0, got: 0, link: "" }; list.unshift(d); }
+      if (!d) { d = { id, path, name: path.split(/[\\/]/).pop(), size: Number(opts.size) || 0, got: 0, link: "" }; list.unshift(d); }   // (size: known already when it was picked on the PC screen, so the card never says "0 B of 0 B")
       d.link = ""; d.err = ""; d.note = ""; d.state = "queued"; d.touched = Date.now();
       save(); paint(true);
-      toast(d.got ? "Resuming " + d.name : "Download started", { label: "View", run: openDownloads });
+      if (!opts.quiet) toast(d.got ? "Resuming " + d.name : "Download started", { label: "View", run: openDownloads });
       pump();
+    }
+
+    /* One download, drawn live (name, size, speed, time left, pause and cancel, and a big Open when it is saved): used by the card on the PC screen view, so a file picked there
+       can be followed without leaving it. It uses the same row as the Downloads list, so the two always agree. */
+    function watch(path) {
+      const id = keyOf(path), box = h("div", { class: "dl dl-one", "aria-live": "polite" });
+      box.dataset.fresh = String(Date.now());
+      fillers.set(box, (b) => {
+        const d = list.find((x) => x.id === id);
+        if (!d) { b.replaceChildren(h("div", { class: "dl-gone" }, ico("x"), h("span", { text: "This download was removed." }))); return; }
+        const kids = [row(d)];
+        if (d.state === "done" && !d.gone) kids.push(h("div", { class: "actions dl-after" }, h("button", { class: "btn primary", type: "button", onclick: () => { haptic("light"); open(d); } }, ico("newtab"), "Open")));
+        b.replaceChildren(...kids);
+      });
+      views.add(box); fillers.get(box)(box);
+      return box;
+    }
+    /** Start a download and hand back the live view of it. In a plain browser there is nothing to follow (the browser shows its own), so it hands back null. */
+    async function startAndWatch(path, size) {
+      await start(path, { quiet: true, size });
+      return native() ? watch(path) : null;
     }
 
     const pause = (d) => { if (d.state === "running") { d.stop = "pause"; if (d.ctl) d.ctl.abort(); if (d.wake) d.wake(); } else if (d.state === "queued" || d.state === "waiting") { d.state = "paused"; save(); paint(true); } };
@@ -877,7 +988,7 @@
       const left = d.speed > 0 && d.size ? fmtDur((d.size - d.got) / d.speed) + " left" : "";
       switch (d.state) {
         case "queued": return "Starting…";
-        case "running": return d.offline ? `Connection lost. Trying again${d.retry ? " (" + d.retry + ")" : ""}…` : [`${pct(d)}%`, `${fmtSize(d.got)} of ${fmtSize(d.size)}`, d.speed ? fmtSize(d.speed) + "/s" : "", left].filter(Boolean).join("  ·  ");
+        case "running": return d.offline ? `Connection lost. Trying again${d.retry ? " (" + d.retry + ")" : ""}…` : !d.size ? "Getting ready…" : [`${pct(d)}%`, `${fmtSize(d.got)} of ${fmtSize(d.size)}`, d.speed ? fmtSize(d.speed) + "/s" : "", left].filter(Boolean).join("  ·  ");
         case "waiting": return `Waiting for the connection  ·  kept ${fmtSize(d.got)} (${pct(d)}%). Carries on by itself.`;
         case "paused": return `Paused at ${pct(d)}%  ·  ${fmtSize(d.got)} of ${fmtSize(d.size)}`;
         case "finishing": return "Saving to Downloads…";
@@ -894,7 +1005,7 @@
         : d.state === "failed" ? [btn("retry", "Retry", () => resume(d)), btn("x", "Remove", () => remove(d, false), "bad")]
         : d.state === "done" ? [d.gone ? null : btn("newtab", "Open", () => open(d)), btn("trash", d.gone ? "Remove from list" : "Delete", () => remove(d, !d.gone), "bad")] : [];
       const ext = (d.name.split(".").pop() || "").toLowerCase();
-      return h("div", { class: "dl-row", "data-state": d.state + (d.offline && d.state === "running" ? " offline" : "") },
+      return h("div", { class: "dl-row" + (d.state === "done" && Date.now() - (d.finishedAt || 0) < 3500 ? " landed" : ""), "data-state": d.state + (d.offline && d.state === "running" ? " offline" : "") },
         h("span", { class: "dl-ico" }, ico(["png", "jpg", "jpeg", "gif", "webp"].includes(ext) ? "image" : ["zip", "7z", "rar"].includes(ext) ? "folder" : "file")),
         h("div", { class: "dl-main" }, h("div", { class: "dl-name", text: d.name }),
           h("div", { class: "dl-sub", text: line(d) }),
@@ -906,7 +1017,7 @@
       const items = [...list];
       if (!items.length) { body.replaceChildren(h("div", { class: "dl-empty" }, ico("download", 34), h("b", { text: "No downloads yet" }), h("p", { text: "Ask for a file from the chat or open one in Files and tap Download. Big ones can be paused and carry on after a dropped connection." }))); return; }
       const finished = items.filter((d) => d.state === "done").length;
-      body.replaceChildren(...items.map(row), finished ? h("button", { class: "hm-link dl-clear", type: "button", onclick: clearFinished }, "Clear finished (the files stay on your phone)") : null);
+      body.replaceChildren(...[...items.map(row), finished ? h("button", { class: "hm-link dl-clear", type: "button", onclick: clearFinished }, "Clear finished (the files stay on your phone)") : null].filter(Boolean));
     }
     function pill() {
       const bar = $("#dlbar"); if (!bar) return;
@@ -925,7 +1036,7 @@
     }
     function paint(now) {
       if (!now && pillTimer) return;
-      const go = () => { pillTimer = 0; pill(); for (const v of views) { if (v.isConnected) fill(v); else views.delete(v); } };
+      const go = () => { pillTimer = 0; pill(); for (const v of views) { if (v.isConnected) (fillers.get(v) || fill)(v); else if (!v.dataset.fresh || Date.now() - Number(v.dataset.fresh) > 3000) { views.delete(v); fillers.delete(v); } } };
       if (now) { clearTimeout(pillTimer); go(); } else pillTimer = setTimeout(go, 350);
     }
     function mount() { const body = h("div", { class: "dl" }); views.add(body); fill(body); (async () => { for (const d of list) if (d.state === "done" && d.uri && !d.gone) { try { if (!window.AfpApp.savedExists(d.uri)) { d.gone = true; paint(true); } } catch { /* old app */ } } })(); return body; }
@@ -948,7 +1059,7 @@
     save();
     try { if (native()) window.AfpApp.dropPartsExcept(JSON.stringify(list.filter((d) => d.state !== "done").map((d) => d.id))); } catch { /* an older app build */ }
     setTimeout(() => paint(true), 0);
-    return { start, open: openDownloads, mount, count: () => active().length, paint };
+    return { start, startAndWatch, land, open: openDownloads, mount, count: () => active().length, paint };
   })();
   const openDownloads = () => DL.open();
   const download = (path) => DL.start(path);
@@ -1005,11 +1116,53 @@
     } catch (e) { toast(e.message); haptic("error"); }
   }
 
+  /* How much a request can matter, in three colours: green only reads, amber changes files, red deletes, sends, runs or powers something. */
+  const RISK_RANK = { read: 0, write: 1, move: 1, copy: 1, app: 1, deploy: 2, delete: 2, send: 2, run: 2, power: 2 };
+  const RISK_TEXT = { safe: "Safe · only reads", change: "Changes files", high: "High impact" };
+  function planRisk(steps) {
+    let rank = 0;
+    for (const s of steps) rank = Math.max(rank, s.action in RISK_RANK ? RISK_RANK[s.action] : 1);  // an action nobody has named yet counts as a change
+    return ["safe", "change", "high"][rank];
+  }
+  const lastName = (p) => String(p || "").split(/[\\/]/).filter(Boolean).pop() || "your workspace";
+  function folderName(p) {  // the folder a file is in, as the last two names: "Documents/Reports"
+    const parts = String(p || "").split(/[\\/]/).filter(Boolean);
+    if (parts.length <= 1) return parts[0] || "your workspace";
+    parts.pop();
+    return parts.slice(-2).join("/");
+  }
+  /* What the steps mean, in everyday words: "Delete 3 files in Documents/Reports". One line per kind of action. */
+  function plainPlan(steps) {
+    const groups = new Map();
+    for (const s of steps) { if (!groups.has(s.action)) groups.set(s.action, []); groups.get(s.action).push(s); }
+    const lines = [];
+    for (const [action, list] of groups) {
+      const n = list.length, one = n === 1;
+      const same = list.every((s) => folderName(s.path) === folderName(list[0].path));
+      const where = same ? folderName(list[0].path) : "several folders";
+      const things = one ? lastName(list[0].path) : `${n} files`;
+      const verb = { read: "Read", write: "Change", delete: "Delete", move: "Move", copy: "Copy", deploy: "Deploy" }[action];
+      if (verb) lines.push(`${verb} ${things} in ${where}`);
+      else if (action === "send") lines.push(`Send ${things} to this phone`);
+      else if (action === "run") lines.push(one ? "Run a command on this PC" : `Run ${n} commands on this PC`);
+      else if (action === "power") lines.push("Change this PC's power state");
+      else if (action === "app") lines.push(one ? "Open an app on this PC" : `Open ${n} apps on this PC`);
+      else lines.push(`${action} (${n})`);
+    }
+    return lines;
+  }
+
   function planCard(j, readonly) {
     const state = j.status;
     const card = h("div", { class: "plan", "data-state": state === "done" ? "done" : "wait" });
     const title = readonly ? "What I did" : "Needs your approval";
     card.append(h("div", { class: "plan-title" }, ico(readonly ? "check" : "alert"), title));
+    if (!readonly && j.steps.length) {  // in plain words first, coloured by how much it can matter; the exact steps stay below
+      const risk = planRisk(j.steps);
+      card.dataset.risk = risk;
+      card.append(h("div", { class: "risk-head" }, h("span", { class: "risk-chip", "data-risk": risk, text: RISK_TEXT[risk] }),
+        h("ul", { class: "plain" }, plainPlan(j.steps).map((t) => h("li", { text: t })))));
+    }
     if (j.summary) card.append(h("p", { class: "note", text: j.summary })); // e.g. "Read actionsClient.ts (you typed actionClient.ts)"
     const ul = h("ul", { class: "steps" });
     for (const s of j.steps) {
@@ -1028,12 +1181,19 @@
     const appStep = j.steps.find((s) => s.action === "app" && s.warning);
     if (!readonly && pw) card.append(h("div", { class: "warn-line" }, ico("alert"), pw.warning || "This changes the power state of the PC."));
     else if (!readonly && appStep) card.append(h("div", { class: "warn-line" }, ico("alert"), appStep.warning));
-    else if (!readonly && acts.has("run")) card.append(h("div", { class: "warn-line" }, ico("alert"), "A command can't be undone. Read it before you approve."));
+    else if (!readonly && acts.has("run")) card.append(h("div", { class: "warn-line" }, ico("alert"), "A command can't be undone. Read all of it before you approve. The safety filter is a speed bump, not a sandbox."));
     else if (!readonly && acts.has("send")) card.append(h("div", { class: "warn-line" }, ico("info"), "A copy will be sent to this phone. Any size works; large ones take a while."));
+    if (!readonly && Access && Access.isViewer()) {
+      card.append(h("p", { class: "note viewer-note" }, ico("eye"), "You have view-only access, so you can read this plan but not approve it."));
+      return card;
+    }
     if (!readonly) {
-      const yes = h("button", { class: "btn primary", type: "button" }, ico("check"), "Approve");
+      const bio = Lock.approveBio(), confirmWith = Lock.approveOn();   // an app lock with "Confirm approvals" on: Approve asks for the fingerprint (or the PIN)
+      const yes = h("button", { class: "btn primary approve" + (confirmWith ? " secure" : ""), type: "button" }, ico(bio ? "scan" : confirmWith ? "lock" : "check"), bio ? "Approve with fingerprint" : confirmWith ? "Approve with PIN" : "Approve");
       const no = h("button", { class: "btn ghost", type: "button" }, "Reject");
       const needsPin = j.steps.some((s) => s.needs_pin);
+      const what = shorten(j.summary || j.prompt || "this request", 70);
+      const seal = () => { card.classList.add("sealing"); setTimeout(() => card.classList.remove("sealing"), 1000); };   // the card turns green and lifts away
       if (needsPin) {  // unlocking the PC: the approval also needs the unlock PIN, typed here every time and never kept
         const pin = h("input", { class: "text-input pin-input", type: "password", autocomplete: "off", autocapitalize: "off", spellcheck: "false", maxlength: "32", placeholder: "Unlock PIN", "aria-label": "Unlock PIN" });
         const err = h("p", { class: "pin-err", role: "alert", hidden: true });
@@ -1042,12 +1202,14 @@
         pin.addEventListener("input", () => { err.hidden = true; ready(); });
         pin.addEventListener("keydown", (e) => { if (e.key === "Enter" && !yes.disabled) { e.preventDefault(); yes.click(); } });
         card.append(h("label", { class: "pin-field" }, h("span", { text: "Type your unlock PIN to allow this" }), pin), err);
-        yes.onclick = () => {
+        yes.onclick = async () => {
           const value = pin.value;
+          if (!(await Lock.confirm(what))) return;
+          seal();
           act(j.id, "approve", [yes, no], { pin: value }, (message) => { err.textContent = message; err.hidden = false; pin.value = ""; ready(); pin.focus(); });
           pin.value = "";
         };
-      } else yes.onclick = () => act(j.id, "approve", [yes, no]);
+      } else yes.onclick = async () => { if (!(await Lock.confirm(what))) return; seal(); act(j.id, "approve", [yes, no]); };
       no.onclick = () => act(j.id, "reject", [yes, no]);
       card.append(h("div", { class: "actions" }, yes, no));
     }
@@ -1079,7 +1241,7 @@
     else if (j.steps.length) main.append(planCard(j, true));
 
     for (const o of j.outputs) {
-      if (isReply(j)) main.append(h("p", { class: "answer" + (S.mine.has(j.id) && S.fresh.has(j.id) ? " reveal" : ""), text: o }));
+      if (isReply(j)) main.append(h("div", { class: "answer" + (S.mine.has(j.id) && S.fresh.has(j.id) ? " reveal" : "") }, markdownNodes(o)));
       else {
         const copy = h("button", { class: "iconbtn out-copy", type: "button", "aria-label": "Copy", onclick: () => copyText(o) }, ico("copy"));
         main.append(h("div", { class: "out-wrap" }, h("pre", { class: "out", text: o }), copy));
@@ -1115,6 +1277,7 @@
     }
     if (["failed", "expired", "rejected", "stopped"].includes(st)) acts.append(h("button", { class: "btn sm", type: "button", onclick: () => { haptic("light"); send(j.prompt); } }, ico("retry"), "Try again"));
     if (acts.children.length) main.append(acts);
+    if ((j.changed || []).length && ["done", "stopped"].includes(st)) main.append(h("p", { class: "note small undo-note", text: "Undo puts changed files back as they were. It can't take back a command, a file already sent to your phone, or an app that was opened." }));
     const tr = trail(t.id, t.events);
     if (tr) main.append(tr);
     return h("div", { class: "bot" }, h("span", { class: "bot-mark" }, glyph(26, true)), main);
@@ -1161,7 +1324,7 @@
   }
   function heroEl() {
     const sug = h("div", { class: "suggest" });
-    suggestions().forEach((s, i) => sug.append(h("button", { class: "sug", type: "button", vars: { "--d": 0.15 + i * 0.06 + "s" }, onclick: () => { haptic("light"); send(s.text); } }, s.label)));
+    suggestions().forEach(([icon, label, text], i) => sug.append(h("button", { class: "sug", type: "button", vars: { "--d": i * 0.04 + "s" }, onclick: () => { haptic("light"); send(text); } }, ico(icon), label)));
     const orb = h("div", { class: "orb-wrap" }, orbSVG());
     return h("div", { class: "hero" }, orb, h("h2", { text: greeting() }),
       h("p", { text: "Ask your PC to find, read, move or send files. I'll show a plan and wait for your tap before changing anything." }), sug);
@@ -1188,7 +1351,8 @@
       return;
     }
     if (S.skelThread) { S.skelThread = null; S.hero = null; thread.replaceChildren(); }
-    if (!conv || !conv.turns.length) {
+    const held = Q ? Q.items().filter((i) => i.conv === S.conv) : [];
+    if ((!conv || !conv.turns.length) && !held.length) {
       if (!S.hero || S.hero.sig !== greeting() + (S.info ? S.info.pc : "")) {
         S.hero = { el: heroEl(), sig: greeting() + (S.info ? S.info.pc : "") };
         thread.replaceChildren(S.hero.el);
@@ -1197,19 +1361,21 @@
     }
     if (S.hero) { S.hero = null; thread.replaceChildren(); }
 
-    const items = conv.turns.map((t) => ({ key: t.id, time: t.time, turn: t }))
-      .concat(conv.notes.map((n) => ({ key: "n:" + n.time + n.path, time: n.time, note: n })));
-    items.sort((a, b) => new Date(a.time) - new Date(b.time));
+    const items = (conv ? conv.turns : []).map((t) => ({ key: t.id, time: t.time, turn: t }))
+      .concat((conv ? conv.notes : []).map((n) => ({ key: "n:" + n.time + n.path, time: n.time, note: n })))
+      .concat(held.map((i) => ({ key: "q:" + i.id, time: new Date(i.created).toISOString(), held: i })));  // waiting on this phone: always after what the PC already knows
+    items.sort((a, b) => (a.held ? 1 : 0) - (b.held ? 1 : 0) || new Date(a.time) - new Date(b.time));
     const keep = new Set(items.map((i) => i.key));
     for (const [key, rec] of S.nodes) if (!keep.has(key)) { rec.el.remove(); S.nodes.delete(key); }
     items.forEach((item, index) => {
       let rec = S.nodes.get(item.key);
-      const sig = item.turn ? JSON.stringify([item.turn.job, item.turn.events.length, S.openTrails.has(item.key), cfg.openTrails, S.mine.has(item.key)]) : "";
+      const sig = item.turn ? JSON.stringify([item.turn.job, item.turn.events.length, S.openTrails.has(item.key), cfg.openTrails, S.mine.has(item.key)])
+        : item.held ? JSON.stringify([item.held, !!(S.away || S.offline || pcUnreachable()), item.held.state === "queued" && S.jobs.length && heldBehind(item.held), Q.active().filter((i) => i.conv === S.conv).length]) : "";
       if (!rec) {
-        const el = item.turn ? turnEl(item.turn, !S.firstPaint) : h("div", { class: "sys", text: `${fmtTime(item.note.time)} · ${noteText(item.note)}` });
+        const el = item.held ? queuedEl(item.held) : item.turn ? turnEl(item.turn, !S.firstPaint) : h("div", { class: "sys", text: `${fmtTime(item.note.time)} · ${noteText(item.note)}` });
         rec = { el, sig }; S.nodes.set(item.key, rec);
-      } else if (rec.sig !== sig && item.turn) {
-        const el = turnEl(item.turn, false); rec.el.replaceWith(el); rec.el = el; rec.sig = sig;
+      } else if (rec.sig !== sig && (item.turn || item.held)) {
+        const el = item.held ? queuedEl(item.held) : turnEl(item.turn, false); rec.el.replaceWith(el); rec.el = el; rec.sig = sig;
       }
       if (thread.children[index] !== rec.el) thread.insertBefore(rec.el, thread.children[index] || null);
     });
@@ -1299,7 +1465,7 @@
     for (const k of Object.keys(D)) delete D[k];
     const inner = h("div", { class: "dock-inner" });
     dock.append(inner);
-    if (S.offline) { renderOfflineComposer(inner); return; }
+    if (S.offline && !Q) { renderOfflineComposer(inner); return; }  // (with the queue, the box stays usable: what is typed is held until the PC answers)
     if (S.mode === "voice") renderVoicePanel(inner); else renderComposer(inner);
     paintVoice();
   }
@@ -1311,8 +1477,10 @@
     inner.append(h("div", { class: "composer off" }, field));
   }
 
+  function composerHint() { return Q && (S.away || S.offline || pcUnreachable()) ? "Message your PC · it will be queued" : "Message your PC…"; }
+
   function renderComposer(inner) {
-    const field = h("textarea", { class: "field", rows: "1", placeholder: "Message your PC…", "aria-label": "Message", enterkeyhint: "send", autocapitalize: "sentences" });
+    const field = h("textarea", { class: "field", rows: "1", placeholder: composerHint(), "aria-label": "Message", enterkeyhint: "send", autocapitalize: "sentences" });
     field.value = S.drafts[S.conv] || "";
     const sendBtn = h("button", { class: "round send", type: "button", "aria-label": "Send", disabled: true }, ico("arrowUp"));
     const mic = h("button", { class: "round micbtn", type: "button", "aria-label": "Speak instead of typing", onclick: () => { if (Speech.status() !== "ok") { voiceHelp(Speech.status()); return; } cfg.input = "voice"; saveCfg(); setMode("voice"); } }, ico("mic"));
@@ -1527,7 +1695,8 @@
   async function send(text, { voice = false } = {}) {
     text = text.trim();
     if (!text) return;
-    if (S.offline) { toast("Your PC is offline, so nothing can be sent yet."); haptic("error"); return; }
+    if (Screen && !S.offline && !S.away && !pcUnreachable() && Screen.wants(text)) { haptic("light"); Screen.open(); return; }  // "I want to access my PC screen": that opens the screen, it is not a request for the assistant
+    if (S.offline || S.away || pcUnreachable()) { queueRequest(text); return; }  // the PC can't be reached: hold it on the phone, never lose it
     haptic("light");
     const file = S.focus[S.conv]; delete S.focus[S.conv]; // one message only: after that the chat's own history decides
     try {
@@ -1536,8 +1705,153 @@
       S.seen.set(job.id, "new");
       S.jobs = [job, ...S.jobs.filter((j) => j.id !== job.id)];
       S.stick = true; update(true);
-    } catch (e) { if (e.code !== 401) { toast(e.message || "Couldn't send that."); haptic("error"); } }
+    } catch (e) {
+      if (e.code === 401) { /* signed out: the sign-in screen is showing */ }
+      else if (e.data && e.data.code === "session_held") {  // someone else is using the PC: say who, offer to ask, and keep what was typed
+        toast(e.message, Access ? { label: "Ask", run: () => Access.open() } : null); haptic("warning");
+        if (D.field && !D.field.value) { D.field.value = text; D.sync(); }
+      }
+      else if (Q && (!e.status || e.status >= 500 || e.status === 423) && !e.offline) { Link.miss({ status: e.status || 0 }); queueRequest(text, { quiet: true }); }  // the PC dropped just as it was sent: held instead
+      else { toast(e.message || "Couldn't send that."); haptic("error"); }
+    }
     refresh();
+  }
+
+  /* ===================================================================== requests held while the PC is unreachable */
+
+  S.away = false;   // "Keep chatting" was chosen: the popup is closed and a slim strip says the PC can't be reached
+  S.qsent = new Set();  // jobs that came out of the queue, so later ones in the same chat wait their turn
+  let flushing = false;
+
+  function pcUnreachable() { return !!Link && (Link.state === "disconnected" || Link.state === "reconnecting"); }
+
+  /* Hold a request on the phone. Asks once per visit (a short, calm question); after that it is a quiet "Queued" and a tick. */
+  async function queueRequest(text, { quiet = false } = {}) {
+    if (!Q) { toast("Your PC can't be reached, so that has to wait."); haptic("error"); return; }
+    const bad = AfpQueue.neverQueue(text);
+    if (bad) {
+      await ask({ title: "This needs your PC", message: "For your safety, unlocking, locking, shutting down or restarting is never queued. Try again when your PC is back.", ok: "OK", cancel: "", icon: "lock" });
+      if (D.field) { D.field.value = text; D.sync(); }  // what was typed is not lost
+      return;
+    }
+    if (!quiet && !S.queueOk) {
+      const yes = await ask({ title: "Your PC can't be reached", message: "Save this request on your phone and send it when your PC is back? Nothing will run yet.", ok: "Queue request", cancel: "Cancel", icon: "clock" });
+      if (!yes) { if (D.field && !D.field.value) { D.field.value = text; D.sync(); } return; }  // cancelled: the text goes back in the box
+      S.queueOk = true;
+    }
+    const file = S.focus[S.conv]; delete S.focus[S.conv];
+    const item = Q.add({ text, conv: S.conv, file: file || null });
+    if (!item) { toast("The queue is full. Cancel one first."); haptic("error"); return; }
+    haptic("success"); S.stick = true;
+    if (S.queueOk && !quiet) toast("Queued · sends when your PC is back");
+  }
+
+  function heldBehind(item) {
+    return S.jobs.some((j) => S.qsent.has(j.id) && j.conversation === item.conv && (BUSY.has(j.status) || j.status === "awaiting_approval" || j.status === "needs_access"));
+  }
+
+  /* The PC answers again: hand the held requests over one at a time, in order. Each carries its own id, so a dropped connection
+     in the middle can never make the PC run one twice. The PC then plans each from the files as they are NOW and asks for approval as usual. */
+  async function flushQueue() {
+    if (!Q || flushing || S.offline || !S.token || !Link || Link.state !== "connected") return;
+    flushing = true;
+    try {
+      for (let item = Q.next(); item; item = Q.next()) {
+        if (heldBehind(item)) break;
+        Q.mark(item.id, "sending");
+        try {
+          const job = await (await api("/jobs", { method: "POST", body: JSON.stringify({ prompt: item.text, conversation: item.conv, file: item.file, client_id: item.id }) })).json();
+          S.qsent.add(job.id); S.mine.add(job.id); S.fresh.add(job.id); S.seen.set(job.id, "new");
+          S.jobs = [job, ...S.jobs.filter((j) => j.id !== job.id)];
+          Q.remove(item.id);
+        } catch (e) {
+          if (e.code === 401) break;
+          if (e.data && e.data.code === "session_held") { Q.mark(item.id, "queued"); break; }  // someone is using the PC: it stays queued and goes when the turn is free
+          if (e.status && e.status < 500 && e.status !== 423) { Q.mark(item.id, "failed", e.message || "Your PC refused it."); continue; }
+          Q.mark(item.id, "queued"); Link.miss({ status: e.status || 0 }); break;  // it dropped again: the rest keep waiting
+        }
+      }
+    } finally { flushing = false; }
+    refresh();
+  }
+
+  function queueTick() {
+    if (!Q) return;
+    if (Q.expire()) update(true);
+    if (Q.active().length && !S.offline && Link && Link.state === "connected") flushQueue();
+    if (S.model && (Q.items().length || S.queueShown)) { S.queueShown = Q.items().length > 0; update(true); }  // positions and "waiting" notes stay current
+  }
+
+  /* The slim strip under the header: amber while the PC can't be reached, green for a moment when it is back. */
+  function paintAway(state) {
+    const bar = $("#awayBar");
+    if (!bar) return;
+    clearTimeout(S.awayTimer);
+    if (state === "back") {
+      bar.hidden = false; bar.dataset.tone = "ok";
+      bar.replaceChildren(h("span", { class: "away-ico", "aria-hidden": "true" }, ico("check")),
+        h("span", { class: "away-text" }, h("b", { text: "PC is back" }), Q && Q.active().length ? h("span", { text: " · sending your requests…" }) : null));
+      S.awayTimer = setTimeout(() => paintAway(), 4000);
+      return;
+    }
+    if (!S.away || S.offline) { bar.hidden = true; bar.replaceChildren(); return; }
+    bar.hidden = false; bar.dataset.tone = "warn";
+    const n = Q ? Q.active().length : 0;
+    bar.replaceChildren(h("span", { class: "away-ico", "aria-hidden": "true" }, ico("wifiOff")),
+      h("span", { class: "away-text" }, h("b", { text: "PC unreachable" }), h("span", { text: n ? ` · ${n} request${n > 1 ? "s" : ""} queued` : " · Requests can be queued" })),
+      h("button", { class: "away-more", type: "button", onclick: () => { haptic("tick"); S.away = false; paintAway(); if (Link.state !== "connected") showLost(); } }, "Details"));
+  }
+  function keepChatting() {
+    haptic("tick");
+    S.away = true;
+    hideLost(); paintAway();
+    if (S.model) renderDock();
+    if (D.field) setTimeout(() => D.field.focus({ preventScroll: true }), 80);
+  }
+
+  /* A request waiting on this phone, shown as a normal message of yours with its own small status line. */
+  function queuedEl(item) {
+    const iso = new Date(item.created).toISOString();
+    const state = item.state, mine = Q.active().filter((i) => i.conv === item.conv), place = mine.findIndex((i) => i.id === item.id);
+    const behind = state === "queued" && S.jobs.length && heldBehind(item);
+    const away = S.away || S.offline || pcUnreachable();
+    const text = state === "sending" ? "Sending to your PC…"
+      : state === "expired" ? "Expired · it waited too long"
+      : state === "failed" ? (item.error || "Your PC couldn't take this")
+      : behind ? "Waiting for your approval on the request above"
+      : away ? "Queued on this phone · waiting for your PC" : "Queued · sending now";
+    const acts = h("div", { class: "q-acts" });
+    const btn = (label, icon, fn) => h("button", { class: "q-btn", type: "button", onclick: () => { haptic("light"); fn(); } }, ico(icon), label);
+    if (state === "queued") acts.append(btn("Edit", "pencil", () => { if (Q.cancel(item.id)) editQueued(item.text); }), btn("Cancel", "x", () => Q.cancel(item.id)));
+    else if (state === "expired" || state === "failed") acts.append(btn("Try again", "retry", () => { Q.retry(item.id); flushQueue(); }), btn("Remove", "x", () => Q.cancel(item.id)));
+    const order = state === "queued" && mine.length > 1 && place >= 0 ? h("span", { class: "q-pos", text: `${place + 1} of ${mine.length}` }) : null;
+    return h("article", { class: "turn queued enter", "data-id": "q:" + item.id },
+      h("div", { class: "you" }, item.text, h("span", { class: "when", text: fmtTime(iso) })),
+      h("div", { class: "q-state", "data-state": state }, h("span", { class: "q-ico", "aria-hidden": "true" }, state === "sending" ? h("span", { class: "spin" }) : ico(state === "failed" || state === "expired" ? "alert" : "clock")),
+        h("span", { class: "q-text", text }), order, acts));
+  }
+  function editQueued(text) {
+    S.drafts[S.conv] = text;
+    if (S.mode !== "type") { S.mode = "type"; renderDock(); }
+    if (D.field) { D.field.value = text; D.sync(); setTimeout(() => D.field.focus(), 40); }
+  }
+
+  /* When this PC has its own AI model, it names the chat you are in (once), better than the words alone can. Never for a hosted model:
+     that would send it requests that otherwise never leave the PC. Your own rename always wins. Old chats keep the name made from their words. */
+  async function nameChat() {
+    const conv = S.conv;
+    if (!conv || S.titles[conv] || S.autoTitles[conv] || S.titleAsked.has(conv) || S.offline) return;
+    if (!S.info || !S.info.ai || S.info.ai.kind !== "local") return;
+    const chat = S.model && S.model.byId.get(conv);
+    if (!chat || !chat.turns.length) return;
+    S.titleAsked.add(conv);  // once per visit, whatever the answer
+    try {
+      const reply = await (await api("/title", { method: "POST", body: JSON.stringify({ prompt: chat.turns[0].prompt }) })).json();
+      const title = window.AfpTitles ? window.AfpTitles.tidy(reply.title) : reply.title;
+      if (!title || S.titles[conv]) return;
+      S.autoTitles[conv] = title; store.set("afp_autotitles", S.autoTitles);
+      S.sideSig = ""; S.topSig = ""; update(true);
+    } catch { /* the name made from the words stays */ }
   }
 
   /* what changed since the last poll: a tick, a tone, and (for voice requests) a spoken answer */
@@ -1550,6 +1864,10 @@
       if (j.status === "awaiting_approval" || j.status === "needs_access") haptic("warning");
       else if (j.status === "done") haptic("success");
       else if (j.status === "failed" || j.status === "expired") haptic("error");
+      if (j.status === "done" && S.mine.has(j.id) && (j.changed || []).length) {  // a change was just made: undo is one tap away, wherever you are
+        const n = j.changed.length;
+        toast(`Done · changed ${n} file${n === 1 ? "" : "s"}`, { label: "Undo", run: () => act(j.id, "undo", []) });
+      }
       const spoken = S.voiceJobs.has(j.id) || (cfg.speak === "always" && S.mine.has(j.id));
       if (cfg.speak !== "off" && spoken && !S.spoken.has(j.id + j.status) && !BUSY.has(j.status) && j.status !== "new") {
         S.spoken.add(j.id + j.status);
@@ -1573,6 +1891,8 @@
       S.jobs = jobs; S.audit = audit;
       if (cfg.saveChats) Saved.queue(savedSource);  // a copy for reading when the PC is away (saved a moment later, and only if something changed)
       observe(); S.loaded = true; update();
+      if (!S.resumeTried) { S.resumeTried = true; resumeScreen(); }   // once per start of the app
+      nameChat();
       for (const j of jobs) if (!BUSY.has(j.status)) S.fresh.delete(j.id);
     } catch (e) {
       if (e.code === 401) return;
@@ -1601,6 +1921,7 @@
     pc_restart: ["Your PC is restarting", "A restart takes a minute or two. This goes away by itself when it is back.", "power", {}],
     pc_shutdown: ["Your PC shut down", "It told this phone it was shutting down. It stays off until someone starts it. If it was only restarting, this goes away by itself.", "power", {}],
     pc_closing: ["The app was closed on your PC", "Open it again on the PC (Start menu or the tray icon). This goes away by itself.", "cpu", {}],
+    paused: ["Phone access is paused", "Pause was pressed, so no phone can reach this PC right now. Nothing was deleted or undone. To turn it back on, open AccessFromPhone on the PC and tap Resume. This goes away by itself.", "shield", {}],
     pc_battery: ["Your PC ran out of battery", "Its battery was low and it switched off. Plug it in and turn it on. This goes away by itself.", "battery", {}],
   };
   // What the phone app's own check calls them -> the reasons above.
@@ -1638,6 +1959,7 @@
   async function whyLost() {
     let cause = "", hint = "";
     if (!navigator.onLine) cause = "phone_offline";
+    else if (Link.status === 423) cause = "paused";  // the PC answered, and said phone access is paused
     else if (window.AfpApp && window.AfpApp.diagnose) {
       const d = await askNative();
       cause = NATIVE_CAUSE[d.kind] || (d.kind === "OK" ? "pc_error" : "pc_unreachable");
@@ -1694,6 +2016,7 @@
           h("div", { class: "row" },
             h("button", { class: "btn", id: "lostSwitch", type: "button", onclick: switchPc }, ico("scan"), "Switch PC"),
             h("button", { class: "btn", id: "lostWifi", type: "button", hidden: true, onclick: () => { haptic("tick"); try { window.AfpApp.openWifiSettings(); } catch { /* not in the app */ } } }, ico("wifi"), "Wi-Fi settings")),
+          Q ? h("button", { class: "btn lost-keep", id: "lostKeep", type: "button", onclick: keepChatting }, ico("chat"), "Keep chatting · queue requests") : null,
           h("button", { class: "btn ghost lost-saved", id: "lostSaved", type: "button", hidden: true, onclick: () => enterOffline() }, ico("clock"), "View saved chats"))));
     return el;
   }
@@ -1713,6 +2036,7 @@
     $("#lostWifi", lostEl).hidden = !(flags.settings && window.AfpApp && window.AfpApp.openWifiSettings);
     const saved = $("#lostSaved", lostEl); saved.hidden = !(cfg.saveChats && Saved.has());  // old chats can be read even though nothing else can be done
     lostEl.dataset.cause = cause;
+    S.lostCause = cause; if (S.tab === "home" && S.model) renderHome();  // Home's connection card says the same thing
   }
   function paintStatus() {
     if (!lostEl) return;
@@ -1729,13 +2053,14 @@
   }
   function showLost() {
     if (!S.token || $(".auth") || lostEl || S.offline) return;
+    if (S.away) { paintAway(); return; }  // the person chose to keep chatting: the strip says it, no popup on top of their chat
     lostSince = Date.now(); S.wasLost = true;
     if (V.phase !== "idle") voiceEnd(true);  // a half-spoken request must not be sent into the void
     stopSpeaking();
     lostFocus = document.activeElement;
     lostEl = buildLost();
     document.body.append(lostEl);
-    paintLost(navigator.onLine ? "pc_unreachable" : "phone_offline", "");  // something at once; the real reason follows in a moment
+    paintLost(!navigator.onLine ? "phone_offline" : Link.status === 423 ? "paused" : "pc_unreachable", "");  // something at once; the real reason follows in a moment
     document.body.classList.add("is-lost");
     for (const part of lostSections()) part.setAttribute("inert", "");  // nothing behind it can be tapped, typed into, or reached by keyboard
     if (window.AfpApp && window.AfpApp.setBlocking) window.AfpApp.setBlocking(true);  // and the Back button must not get past it
@@ -1775,12 +2100,14 @@
     if (!bar) return null;
     if (!S.offline) { bar.hidden = true; bar.replaceChildren(); return null; }
     const trying = (Link && Link.state === "reconnecting") || !!S.offline.checking;
+    const message = `Reading chats saved ${window.AfpOffline.age(S.offline.savedAt, Date.now())}. New requests wait on this phone until it is back.`;
     bar.hidden = false;
     bar.replaceChildren(
       h("span", { class: "saved-ico", "aria-hidden": "true" }, ico("clock")),
-      h("div", { class: "saved-text" },
-        h("b", { text: "Your PC is offline" }),
-        h("span", { text: `Reading chats saved ${window.AfpOffline.age(S.offline.savedAt, Date.now())}. Nothing can be sent until it is back.` })),
+      h("div", { class: "saved-text", tabindex: "0", "aria-label": "Offline notice. Scroll to read." },
+        h("div", { class: "saved-track" }, [false, true].map((duplicate) =>
+          h("div", { class: "saved-copy", "aria-hidden": duplicate ? "true" : null },
+            h("b", { text: "Your PC is offline" }), h("span", { text: message }))))),
       h("button", { class: "saved-retry", type: "button", disabled: trying, onclick: retrySaved }, trying ? h("span", { class: "spin", "aria-hidden": "true" }) : null, trying ? "Checking…" : "Try again"));
     return bar;
   }
@@ -1796,6 +2123,19 @@
     }
     retryNow(); savedBar();
   }
+  /* The app was closed while looking at the PC's screen (swiped away from the recent apps, no signal) and is opened again before the PC gave up waiting (about 20 seconds):
+     pick the viewing up again at once, as it was, instead of making the person go Home, Access, View the PC's screen. The PC only ever says "viewing" to the phone that IS viewing,
+     it is asked once per start of the app, and with the app lock on it waits for the PIN first. After the PC has ended the viewing there is nothing to pick up, and nothing opens. */
+  async function resumeScreen() {
+    if (!Screen || S.offline) return;
+    try {
+      if (Lock.el) await new Promise((done) => { const wait = setInterval(() => { if (!Lock.el) { clearInterval(wait); done(); } }, 400); setTimeout(() => { clearInterval(wait); done(); }, 60000); });
+      if (S.sheets.length || S.offline) return;   // the person is already somewhere else
+      const view = await (await api("/screen")).json();
+      if (view && view.state === "viewing" && !S.sheets.length) Screen.open({ resume: true });   // it opens on a loading scene that says it is picking up the previous session
+    } catch { /* nothing to pick up */ }
+  }
+
   async function enterOffline() {
     const snap = Saved.current() || await Saved.load();
     if (!snap || !window.AfpOffline.valid(snap)) { toast("There are no saved chats on this phone yet."); return; }
@@ -1828,17 +2168,24 @@
     const wait = Link.holdMs || 0;  // the popup stays at least a moment, so it never just flashes
     setTimeout(() => {
       if (Link.state !== "connected") return;  // it dropped again while the popup was being held
-      if (S.offline) { leaveSaved(); return; }
-      const had = !!lostEl;
+      S.lostCause = "";
+      if (S.offline) { leaveSaved(); flushQueue(); return; }
+      const had = !!lostEl, wasAway = S.away;
       hideLost();
-      if (!S.token || !had) return;
+      if (wasAway) { S.away = false; paintAway("back"); }
+      if (!S.token || (!had && !wasAway)) return;
       toast("Back online"); haptic("success");
       refresh(); loadInfo(); loadPcStatus(); Push.refreshQuietly();
+      flushQueue();
     }, wait);
   }
   function linkChanged(state, previous) {
     S.online = state === "connected" || state === "wobbling";
     S.sideSig = ""; S.topSig = ""; if (S.model) { renderSide(); renderTop(); }
+    if (D.field && D.field.placeholder !== undefined && !D.field.disabled) D.field.placeholder = composerHint();
+    if (S.away && state !== "connected") paintAway();
+    if (S.tab === "home" && S.model) renderHome();
+    if (Q && S.model && Q.items().length) update(true);  // "waiting for your PC" and "sending now" follow the connection
     if (state === "wobbling") schedulePing(Link.delay());              // look again soon: it may be only a blip
     else if (state === "disconnected" && previous === "wobbling") { showLost(); schedulePing(); }
     else if (state === "disconnected") {                                // a retry failed: say so, and look at the reason again
@@ -1865,7 +2212,7 @@
 
   let renderSig = "";
   function update(force) {
-    const sig = JSON.stringify([S.jobs, S.audit.length, S.conv, S.hidden.size, S.query, S.loaded]);
+    const sig = JSON.stringify([S.jobs, S.audit.length, S.conv, S.hidden.size, S.query, S.loaded, Q ? Q.items() : 0, !!S.away]);
     if (!force && sig === renderSig) return;
     renderSig = sig;
     S.model = buildModel();
@@ -2049,7 +2396,9 @@
       if (pair) {
         const name = el._name ? el._name() : guessDevice();
         const previous = S.token || store.raw("afp_token") || ""; // still ours: the PC then updates this phone's entry instead of adding a second one
-        const res = await fetch("/pair/claim", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: value, name, previous }) });
+        let install = store.raw("afp_install");   // this app's own id, kept even after signing out: the PC then knows it is the same phone, not a new one
+        if (!install) { try { install = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join(""); } catch { install = String(Date.now()) + Math.random().toString(16).slice(2); } store.setRaw("afp_install", install); }
+        const res = await fetch("/pair/claim", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: value, name, previous, install }) });
         let body = null; try { body = await res.json(); } catch { /* no body */ }
         if (res.status === 409) {  // the PC is full: say so in a pop-up, not a thin red line
           el.classList.remove("busy"); delete el.dataset.phase;
@@ -2108,16 +2457,20 @@
   const tone = (pct, warnAt, badAt) => pct >= badAt ? "bad" : pct >= warnAt ? "warn" : "ok";
   const quality = (ms) => ms < 60 ? ["Excellent", "ok"] : ms < 150 ? ["Good", "ok"] : ms < 400 ? ["Fair", "warn"] : ["Slow", "bad"];
 
+  let statusBusy = false;
   async function loadPcStatus() {
+    if (statusBusy) return;  // one question at a time: a slow answer is never piled on
+    statusBusy = true;
     const t0 = performance.now();
     try {
       const d = await (await api("/status")).json();
       PC.rtt = Math.max(1, Math.round(performance.now() - t0));
       PC.data = d;
+      if (Access) Access.update(d.session || null);
       const b = d.battery;
       if (b && !b.plugged && b.percent <= 20 && !PC.warned) { PC.warned = true; toast(`The PC's battery is at ${b.percent}%. Plug it in soon.`); haptic("warning"); }
       if (!b || b.plugged || b.percent > 30) PC.warned = false;
-      S.topSig = ""; S.sideSig = ""; renderTop(); renderSide();
+      renderTop(); renderSide();  // each redraws only when its own signature changed (battery, Wi-Fi level and speed are in it), so a refresh every 2 s causes no flicker
       if (PC.repaint) PC.repaint();
       if (S.tab === "home") renderHome();
       paintChips();
@@ -2127,7 +2480,7 @@
         S.topSig = ""; S.sideSig = ""; renderTop(); renderSide();
       }
       /* otherwise offline: the banner already says so */
-    }
+    } finally { statusBusy = false; }
   }
 
   /* the little chip in the top bar: battery % at a glance, tap for everything */
@@ -2229,8 +2582,8 @@
     PC.repaint = repaint;
     if (PC.data) repaint();
     loadPcStatus();
-    PC.timer = setInterval(loadPcStatus, 2000);
-    openSheet({ title: "This PC", body: view.node, full: true, route: "status", onClose: () => { clearInterval(PC.timer); PC.repaint = null; } });
+    loadPcStatus();  // the page's own 2-second refresh keeps it current; there is no second timer
+    openSheet({ title: "This PC", body: view.node, full: true, route: "status", onClose: () => { PC.repaint = null; } });
   }
 
   /* ===================================================================== Home: the PC at a glance, one-tap actions, what needs you */
@@ -2248,6 +2601,33 @@
     haptic("light"); setTab("chat"); send(text);
   }
 
+  /* The everyday tools (quick controls, inbox, notes, reminders, watchers, recent files, print, snap, briefing) are a separate script and style sheet,
+     fetched once Home has the PC's answer and only if this PC has them switched on. */
+  let Daily = null, dailyLoad = null, dailyFailed = false;
+  if (window.AfpUx) window.AfpUx.spot(document);   // the soft light that follows a finger on cards and tiles
+  function loadDaily() {
+    if (Daily || dailyLoad || dailyFailed) return dailyLoad;
+    dailyLoad = new Promise((resolve, reject) => {
+      document.head.append(h("link", { rel: "stylesheet", href: "/static/daily.css" }));
+      const s = h("script", { src: "/static/daily.js" });
+      s.onload = resolve; s.onerror = () => reject(new Error("Couldn't load the everyday tools."));
+      document.head.append(s);
+    }).then(() => {
+      Daily = window.AfpDaily.create({
+        h, ico, ask, toast, haptic, openSheet, saveBlob, askAccess,
+        token: () => S.token,
+        api: (path, opts) => api(path, opts),
+        copy: copyText, speech: Speech, lang: () => cfg.lang,
+        closeSheet: () => closeSheet(),
+        openFolder: (path) => openFolder(path), openFile: (path) => openFile(path),
+        openScreen: () => { if (Screen) Screen.open(); },
+      });
+      S.homeSig = ""; renderHome();
+    }).catch(() => { dailyFailed = true; dailyLoad = null; });
+    return dailyLoad;
+  }
+  const dailyOn = () => !!(S.info && S.info.daily && S.info.daily.enabled) && !S.offline;
+
   /** Home is the bottom of the stack. Opening the chat from it adds one history entry, so Back (or the arrow) returns Home. */
   function setTab(tab, { push = true } = {}) {
     tab = tab === "chat" ? "chat" : "home";
@@ -2256,29 +2636,65 @@
     S.tab = tab; store.setRaw("afp_tab", tab);
     document.body.classList.toggle("tab-home", tab === "home"); document.body.classList.toggle("tab-chat", tab === "chat");
     const home = $("#home"); if (home) home.hidden = tab !== "home";
+    if (tab === "home") S.homeEnter = true;
     S.tabSig = ""; S.homeSig = ""; S.topSig = ""; paintTabs();
     if (tab === "home") { renderHome(); if (S.token && !S.offline) loadPcStatus(); }
     else { S.stick = true; if (S.model) update(true); }
   }
 
+  const TAB_DEFS = [["home", "Home", "home"], ["chat", "Chat", "chat"], ["access", "Access", "monitor"], ["files", "Files", "folder"], ["settings", "Settings", "sliders"]];
+  const calmMotion = () => motionLevel() === "off" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  /* Each tab that opens a screen gets its own oil-paint transition (ux.js paint): the PC is scanned like a screen, Files is a stack of papers, Settings is a dial being turned.
+     The screen is opened once the paint covers the page, so nothing flashes on the way. */
+  const TAB_PAINT = { access: ["pc", "Your PC", "monitor"], files: ["files", "Files", "folder"], settings: ["settings", "Settings", "sliders"] };
   function tabTo(key) {
     haptic("tick");
-    if (key === "files") openFolder("");
-    else if (key === "pc") openPcStatus();
-    else setTab(key);
+    const opener = key === "files" ? () => openFolder("") : key === "settings" ? () => openSettings()
+      : key === "access" ? () => { if (Access) Access.open(); else toast("PC access isn't available in this version."); } : null;
+    if (opener) {
+      if (window.AfpUx && window.AfpUx.paint && !calmMotion() && (key !== "access" || Access)) {
+        const [theme, label, icon] = TAB_PAINT[key];
+        window.AfpUx.paint({ theme, label, badge: ico(icon), level: motionLevel(), onCovered: opener });
+      } else opener();
+    } else if (key === "chat" && S.tab !== "chat" && !calmMotion()) {
+      const bar = $("#tabbar");
+      if (bar) { bar.style.setProperty("--i", String(TAB_DEFS.findIndex((d) => d[0] === "chat"))); bar.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.dataset.tab === "chat")); }
+      clearTimeout(S.tabSwitch);
+      if (window.AfpUx && window.AfpUx.paint) {
+        // oil paint sweeps over the page, Chat is switched on underneath, then the paint is scraped away
+        const accent = ACCENTS.find((a) => a[0] === cfg.accent) || ACCENTS[0];
+        window.AfpUx.paint({ theme: "chat", colors: [accent[1], accent[2]], label: "Chat", badge: ico("chat"), level: motionLevel(), onCovered: () => setTab("chat") });
+      } else S.tabSwitch = setTimeout(() => setTab("chat"), 190);
+    } else setTab(key);
   }
 
+  /* The bar is built once and then only updated, so the highlight can slide (a rebuilt bar would jump). */
   function paintTabs() {
     const bar = $("#tabbar"); if (!bar) return;
     const n = pendingJobs().length, sig = JSON.stringify([S.tab, n]);
-    if (sig === S.tabSig) return;
+    if (sig === S.tabSig && bar.dataset.built) return;
     S.tabSig = sig;
-    bar.replaceChildren(...[["home", "Home", "home"], ["chat", "Chat", "chat"], ["files", "Files", "folder"], ["pc", "PC", "gauge"]].map(([key, label, icon]) => {
-      const b = h("button", { class: "tab" + (S.tab === key ? " on" : ""), type: "button", "data-tab": key, onclick: () => tabTo(key) }, ico(icon), h("span", { text: label }), key === "chat" && n ? h("em", { text: String(n) }) : null);
-      b.setAttribute("aria-label", label + (key === "chat" && n ? `, ${n} waiting for you` : ""));
-      if (S.tab === key) b.setAttribute("aria-current", "page");
-      return b;
-    }));
+    if (!bar.dataset.built) {
+      bar.dataset.built = "1";
+      bar.replaceChildren(h("span", { class: "tab-glass", "aria-hidden": "true" }), ...TAB_DEFS.map(([key, label, icon]) =>
+        h("button", { class: "tab", type: "button", "data-tab": key, onclick: () => tabTo(key) }, ico(icon), h("span", { class: "tab-label", text: label }))));
+    }
+    let at = 0;
+    TAB_DEFS.forEach(([key, label], i) => {
+      const b = bar.querySelector(`.tab[data-tab="${key}"]`); if (!b) return;
+      const on = S.tab === key;
+      b.classList.toggle("on", on);
+      if (on) { b.setAttribute("aria-current", "page"); at = i; } else b.removeAttribute("aria-current");
+      const waiting = key === "chat" ? n : 0;
+      let badge = b.querySelector("em");
+      if (waiting && !badge) { badge = h("em"); b.append(badge); }
+      if (!waiting && badge) badge.remove();
+      if (badge) badge.textContent = String(waiting);
+      b.setAttribute("aria-label", label + (waiting ? `, ${waiting} waiting for you` : ""));
+    });
+    bar.style.setProperty("--i", String(at));
+    if (Access) Access.marks();  // the dot on the Access icon (someone is using the PC, or asking you for a turn)
   }
 
   function suggestions() {
@@ -2291,7 +2707,11 @@
 
   function paintChips() {
     const row = D.chips; if (!row) return;
-    row.replaceChildren(...suggestions().map(([icon, label, text]) => h("button", { class: "sugg", type: "button", onclick: () => { haptic("light"); send(text); } }, ico(icon), h("span", { text: label }))));
+    const list = suggestions(), sig = JSON.stringify(list.map((x) => x[1]));
+    if (row.dataset.sig !== sig) {  // rebuilt only when the suggestions changed, not on every status refresh
+      row.dataset.sig = sig;
+      row.replaceChildren(...list.map(([icon, label, text]) => h("button", { class: "sugg", type: "button", onclick: () => { haptic("light"); send(text); } }, ico(icon), h("span", { text: label }))));
+    }
     row.hidden = !!(D.field && D.field.value.trim()) || !!S.offline;
   }
 
@@ -2311,14 +2731,92 @@
     return { steps, pushKnown, done: steps.filter((s) => s.done).length };
   }
 
-  /** "Locked" / "Unlocked" at the top of Home: tap to unlock (when it can be) or to lock. */
-  function lockChip() {
-    const u = unlockInfo(), d = PC.data;
-    if (S.offline || !u || (u.locked !== true && u.locked !== false)) return null;
-    const locked = u.locked === true, can = locked ? unlockReady() : canPower("lock");
-    const b = h("button", { class: "lockchip " + (locked ? "locked" : "open"), type: "button", disabled: !can, "aria-label": locked ? "PC is locked. Unlock it" : "PC is unlocked. Lock it" }, ico(locked ? "lock" : "unlock"), h("span", { text: locked ? "Locked" : "Unlocked" }));
-    b.onclick = () => askPc(locked ? "unlock my PC" : "lock my PC");
-    return b;
+  /* The Wi-Fi chip beside the battery: signal quality as a colour, and the PC's network speed, like a phone's status bar. Tap for details. */
+  function netState() {
+    if (S.offline || S.away || pcUnreachable()) {
+      const paused = S.lostCause === "paused";
+      return { level: "bad", off: true, text: paused ? "Paused" : "Offline", aria: paused ? "Phone access is paused. Open PC status" : "PC unreachable. Open PC status" };
+    }
+    const n = PC.data && PC.data.available && PC.data.network;
+    if (!PC.rtt && !n) return null;
+    const [label, level] = PC.rtt ? quality(PC.rtt) : ["", ""];
+    const rate = n && n.down_bps != null ? fmtRate(n.down_bps) : null;
+    return { level, off: false, text: rate ? `${rate.n} ${rate.u}` : `${PC.rtt} ms`, aria: `Connection ${label.toLowerCase()}${PC.rtt ? ", " + PC.rtt + " milliseconds" : ""}${rate ? ", " + rate.n + " " + rate.u : ""}. Open PC status` };
+  }
+  const netKey = () => { const n = netState(); return n ? n.level + n.text : ""; };
+  function netChip(extra = "") {
+    const n = netState();
+    if (!n) return extra.includes("mini") ? h("span", { class: "chip-pc chip-net mini sk-chip", "aria-hidden": "true" }) : h("span", { class: "chip-net-empty", hidden: true });
+    return h("button", { class: "chip-pc chip-net " + extra, "data-level": n.level, type: "button", "aria-label": n.aria, onclick: (e) => { e.stopPropagation(); haptic("light"); closeDrawer(); openPcStatus(); } },
+      ico(n.off ? "wifiOff" : "wifi"), h("span", { class: "t", text: n.text }));
+  }
+
+  /* The PC as a small object with depth: a monitor that glows by state (cyan = ready, amber = locked, grey = can't be reached), floats, and tilts to a finger or the phone's movement.
+     In "Simple" the same monitor is drawn flat with a slow glow; in "Off" it stands still (all of that is in the CSS, keyed on <html data-motion>). */
+  function pcStage(state, name, mini) {
+    const icon = state === "locked" ? "lock" : state === "offline" ? "wifiOff" : "unlock";
+    const say = state === "locked" ? "locked" : state === "offline" ? "can't be reached" : "ready";
+    const face = (cls) => h("i", { class: "pcf " + cls, "aria-hidden": "true" });
+    const front = h("div", { class: "pcf pcf-front" }, h("div", { class: "pcscr" }, h("span", { class: "pcscan" }), ico(icon, mini ? 22 : 34), name ? h("small", { text: name }) : null));
+    const obj = h("div", { class: "pcobj" }, face("pcf-back"), face("pcf-l"), face("pcf-r"), face("pcf-t"), h("i", { class: "pcneck" }), h("i", { class: "pcbase" }), front);
+    return h("div", { class: "pcstage" + (mini ? " mini" : ""), "data-state": state, role: "img", "aria-label": (name || "Your PC") + " is " + say },
+      h("span", { class: "pcglow" }), h("span", { class: "pcring" }), h("span", { class: "pcring r2" }), h("div", { class: "pcfloat" }, obj));
+  }
+  /* The monitor leans toward a finger on it, and with the phone's movement. Only in Full: the other levels keep it still. */
+  (function leanWithTheHand() {
+    let frame = 0, pending = null;
+    const lean = (rx, ry) => {
+      pending = [rx, ry];
+      if (!frame) frame = requestAnimationFrame(() => { frame = 0; document.querySelectorAll(".pcobj").forEach((o) => { o.style.setProperty("--rx", pending[0].toFixed(1) + "deg"); o.style.setProperty("--ry", pending[1].toFixed(1) + "deg"); }); });
+    };
+    const rest = () => lean(-6, -14);
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const full = () => !root.dataset.motion;
+    document.addEventListener("pointermove", (e) => {
+      if (!full() || !e.target.closest) return;
+      const stage = e.target.closest(".pcstage"); if (!stage) return;
+      const r = stage.getBoundingClientRect();
+      lean(clamp(-6 - ((e.clientY - r.top) / r.height - 0.5) * 22, -22, 10), clamp(-14 + ((e.clientX - r.left) / r.width - 0.5) * 44, -40, 14));
+    }, { passive: true });
+    document.addEventListener("pointerup", () => { if (full()) setTimeout(rest, 500); }, { passive: true });
+    window.addEventListener("deviceorientation", (e) => {
+      if (!full() || e.gamma == null || !document.querySelector(".pcobj")) return;
+      lean(clamp(-6 + (e.beta - 55) * 0.22, -16, 6), clamp(-14 + e.gamma * 0.32, -30, 4));
+    }, { passive: true });
+  })();
+  /* A press on a card or big button leans it toward the finger for as long as it is held (Full only). */
+  document.addEventListener("pointerdown", (e) => {
+    if (root.dataset.motion || !e.target.closest) return;
+    if (e.target.closest("input, textarea, select")) return;
+    const t = e.target.closest(".hm-card, .hm-btn, .hm-tile, .plan");
+    if (!t) return;
+    const r = t.getBoundingClientRect();
+    t.style.setProperty("--tx", (-((e.clientY - r.top) / r.height - 0.5) * 5).toFixed(2) + "deg");
+    t.style.setProperty("--ty", (((e.clientX - r.left) / r.width - 0.5) * 7).toFixed(2) + "deg");
+    t.classList.add("pressing");
+    const up = () => { t.classList.remove("pressing"); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); };
+    window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
+  }, { passive: true });
+  /* Graphics and motion in Settings: three levels, a live preview that follows the choice, and one line about what it does. */
+  function motionBox() {
+    const OPTIONS = [["full", "Full 3D", "Depth, tilt and 3D movement."], ["simple", "Simple", "The same look, flat, with gentle movement."], ["off", "Off", "Nothing moves."]];
+    const seg = h("div", { class: "seg", role: "group", "aria-label": "Graphics and motion" });
+    const note = h("p", { class: "set-sub gfx-note", role: "status" });
+    const paint = () => {
+      const level = motionLevel();
+      [...seg.children].forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.id === level)));
+      note.textContent = OPTIONS.find((o) => o[0] === level)[2] + (["full", "simple", "off"].includes(cfg.motion) ? "" : " Chosen for this phone automatically.");
+    };
+    OPTIONS.forEach(([id, label]) => {
+      const b = h("button", { type: "button", "data-id": id }, label);
+      b.onclick = () => { cfg.motion = id; cfg.reduceMotion = id === "off"; saveCfg(); applyLook(); paint(); haptic("tick"); };
+      seg.append(b);
+    });
+    paint();
+    return h("div", { class: "set col gfx" },
+      h("div", { class: "set-text" }, h("div", { class: "set-label", text: "3D graphics and animation" }),
+        h("div", { class: "set-sub", text: "Turn the 3D down on an older phone or to save battery. Simple keeps the same look with softer, flat animation." })),
+      seg, pcStage("ok", "", true), note);
   }
 
   function renderHome() {
@@ -2326,17 +2824,45 @@
     const d = PC.data && PC.data.available ? PC.data : null, u = unlockInfo(), pending = pendingJobs();
     const recent = [...S.jobs].filter((j) => !S.hidden.has(j.conversation)).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 3);
     const list = checklist(), listOpen = list.done < list.steps.length && store.raw("afp_checklist_off") !== "1" && !S.offline;
-    const sig = JSON.stringify([S.online, !!S.offline, S.loaded, S.info && [S.info.pc, S.info.power_actions, (S.info.folders && S.info.folders.granted || []).length], d && [d.cpu_percent, d.memory && d.memory.percent, d.disk && d.disk.percent, d.battery && [d.battery.percent, d.battery.plugged]], u,
-      pending.map((j) => j.id), recent.map((j) => [j.id, j.status]), list.steps.map((s) => s.done), listOpen]);
-    if (sig === S.homeSig) return;
+    const readings = d ? [
+      ["Processor", d.cpu_percent + "%", d.cpu_percent, tone(d.cpu_percent, 70, 90)],
+      ["Memory", d.memory.percent + "%", d.memory.percent, tone(d.memory.percent, 80, 92)],
+      ...(d.disk ? [["Disk free", fmtBytes(d.disk.free), d.disk.percent, tone(d.disk.percent, 85, 95)]] : []),
+    ] : [];
+    const sig = JSON.stringify([S.online, !!S.offline, S.loaded, S.info && [S.info.pc, S.info.power_actions, S.info.screen_dark, (S.info.folders && S.info.folders.granted || []).length, !!(S.info.daily && S.info.daily.enabled)], !!Daily, !!d, !!(d && d.disk), u,
+      pending.map((j) => j.id), recent.map((j) => [j.id, j.status]), list.steps.map((s) => s.done), listOpen, netKey()]);
+    if (sig === S.homeSig) {
+      // Live readings must not replace buttons or steal focus while someone is using Home.
+      root.querySelectorAll(".hm-tile").forEach((tile, i) => {
+        const reading = readings[i]; if (!reading) return;
+        tile.querySelector("b").textContent = reading[1];
+        const bar = tile.querySelector(".hm-bar i");
+        bar.style.width = `${Math.max(2, Math.min(100, reading[2]))}%`;
+        bar.dataset.tone = reading[3];
+      });
+      const net = root.querySelector(".hm-strip .chip-net");
+      if (net) { const nextNet = netChip(); net.className = nextNet.className; net.dataset.level = nextNet.dataset.level || ""; net.setAttribute("aria-label", nextNet.getAttribute("aria-label") || ""); net.replaceChildren(...nextNet.childNodes); }
+      const chip = root.querySelector(".hm-strip .chip-pc:not(.chip-net)");
+      if (chip) {
+        const next = pcChip();
+        chip.className = next.className;
+        chip.dataset.level = next.dataset.level;
+        chip.setAttribute("aria-label", next.getAttribute("aria-label"));
+        chip.replaceChildren(...next.childNodes);
+      }
+      return;
+    }
     S.homeSig = sig;
+    if (dailyOn()) { if (Daily) Daily.sync(S.info); else loadDaily(); }
     if (!S.pushAsked && S.token && !S.offline) { S.pushAsked = true; Push.load().then(() => { S.homeSig = ""; renderHome(); }).catch(() => {}); }
 
     const pc = (S.info && S.info.pc) || "Your PC";
     const parts = [];
     parts.push(h("div", { class: "hm-strip" }, h("span", { class: "hm-dot" + (S.online && !S.offline ? "" : " off") }),
-      h("div", { class: "hm-name" }, h("b", { text: pc }), h("small", { text: S.offline ? "Offline · reading saved chats" : S.online ? "Online" : "Can't reach it" })), h("span", { class: "grow" }), lockChip(), pcChip(),
-      h("button", { class: "iconbtn", type: "button", "aria-label": "Settings", onclick: () => { haptic("tick"); openSettings(); } }, ico("sliders"))));
+      h("div", { class: "hm-name" }, h("b", { text: pc }), h("small", { text: S.offline ? "Offline · reading saved chats" : S.online ? "Online" : "Can't reach it" })), h("span", { class: "grow" }), netChip(), pcChip()));  // Settings lives in the bottom bar; the PC's status opens from the battery chip
+    parts.push(h("header", { class: "hm-welcome" }, h("h1", { text: "Your PC, within reach." }),
+      h("p", { text: S.offline ? "Your saved chats are still here." : "Check in, find a file, or pick up where you left off." })));
+    parts.push(pcStage(S.offline || !S.online ? "offline" : pcLocked() ? "locked" : "ok", pc));
 
     if (pending.length) {
       const first = pending[0];
@@ -2350,40 +2876,54 @@
       parts.push(h("section", { class: "hm-card sk-card", "aria-hidden": "true" }, h("i", { class: "sk line" }), h("i", { class: "sk line short" })));
       root.replaceChildren(...parts); return;
     }
+    const cards = [];
     if (S.offline) {
-      parts.push(h("section", { class: "hm-card" }, h("div", { class: "hm-pc" }, h("span", { class: "hm-pcicon warn" }, ico("wifiOff")), h("div", { class: "grow" }, h("b", { text: "Your PC is offline" }), h("small", { text: "Showing chats saved on this phone. Nothing can be sent until it is back." }))),
+      cards.push(h("section", { class: "hm-card" }, h("div", { class: "hm-pc" }, h("span", { class: "hm-pcicon warn" }, ico("wifiOff")), h("div", { class: "grow" }, h("b", { text: "Your PC is offline" }), h("small", { text: "Showing chats saved on this phone. New requests wait here until it is back." }))),
         h("div", { class: "hm-btns" }, h("button", { class: "hm-btn primary", type: "button", onclick: () => { haptic("tick"); setTab("chat"); } }, ico("chat"), "Read saved chats"))));
     } else {
       const locked = pcLocked(), buttons = [];
       if (locked && unlockReady()) buttons.push(h("button", { class: "hm-btn primary", type: "button", onclick: () => askPc("unlock my PC") }, ico("unlock"), "Unlock"));
       else if (!locked && canPower("lock")) buttons.push(h("button", { class: "hm-btn primary", type: "button", onclick: () => askPc("lock my PC") }, ico("lock"), "Lock"));
+      if (canPower("screen_off")) {
+        const dark = !!(S.info && S.info.screen_dark);   // the PC's screen is covered right now: the button gives it back
+        buttons.push(h("button", { class: "hm-btn" + (dark ? " primary" : ""), type: "button", onclick: () => askPc(dark ? "turn on my screen" : "black out my screen") }, ico("monitor"), dark ? "Screen on" : "Screen off"));
+      }
       if (canPower("sleep")) buttons.push(h("button", { class: "hm-btn", type: "button", onclick: () => askPc("put my PC to sleep") }, ico("moon"), "Sleep"));
       const known = !!d || !!u;
       const title = !known ? "Checking…" : locked ? "Locked" : "Unlocked";
       const sub = !known ? "Asking your PC" : locked ? (unlockReady() ? "Tap Unlock, then approve with your PIN." : "Unlocking isn't set up. Do that on the PC.") : "Ready for requests";
       const tile = (label, value, pct, tn) => h("div", { class: "hm-tile" }, h("small", { text: label }), h("b", { text: value }), h("div", { class: "hm-bar" }, h("i", { style: `width:${Math.max(2, Math.min(100, pct))}%`, "data-tone": tn })));
-      parts.push(h("section", { class: "hm-card" }, h("div", { class: "hm-pc" }, h("span", { class: "hm-pcicon " + (!known ? "" : locked ? "warn" : "ok") }, ico(!known ? "gauge" : locked ? "lock" : "unlock")),
+      cards.push(h("section", { class: "hm-card" }, h("div", { class: "hm-pc" }, h("span", { class: "hm-pcicon " + (!known ? "" : locked ? "warn" : "ok") }, ico(!known ? "gauge" : locked ? "lock" : "unlock")),
         h("div", { class: "grow" }, h("b", { text: title }), h("small", { text: sub }))),
         buttons.length ? h("div", { class: "hm-btns" }, ...buttons) : null,
-        d ? h("div", { class: "hm-tiles" }, tile("Processor", d.cpu_percent + "%", d.cpu_percent, tone(d.cpu_percent, 70, 90)), tile("Memory", d.memory.percent + "%", d.memory.percent, tone(d.memory.percent, 80, 92)),
-          d.disk ? tile("Disk free", fmtBytes(d.disk.free), d.disk.percent, tone(d.disk.percent, 85, 95)) : null) : null));
+        d ? h("div", { class: "hm-tiles" }, ...readings.map((r) => tile(...r))) : null));
+      const everyday = dailyOn() && Daily ? Daily.homeCard() : null;
+      if (everyday) cards.push(everyday);
     }
 
     if (listOpen) {
       const rows = list.steps.map((s) => h("div", { class: "hm-step" + (s.done ? " done" : "") }, h("span", { class: "mark" }, s.done ? ico("check") : null),
         h("div", { class: "grow" }, h("b", { text: s.title }), h("small", { text: s.sub })), !s.done && s.action ? h("button", { class: "hm-pill", type: "button", onclick: () => { haptic("tick"); s.action[1](); } }, s.action[0]) : null));
-      parts.push(h("section", { class: "hm-card" }, h("div", { class: "hm-head" }, h("b", { text: "Get set up" }), h("span", { class: "hm-chip ok", text: `${list.done} of ${list.steps.length} done` })),
+      cards.push(h("section", { class: "hm-card" }, h("div", { class: "hm-head" }, h("b", { text: "Get set up" }), h("span", { class: "hm-chip ok", text: `${list.done} of ${list.steps.length} done` })),
         h("div", { class: "hm-progress" }, h("i", { style: `width:${list.done / list.steps.length * 100}%` })), ...rows,
         h("button", { class: "hm-link", type: "button", onclick: () => { store.setRaw("afp_checklist_off", "1"); S.homeSig = ""; renderHome(); } }, "Hide this")));
     }
 
     if (recent.length) {
-      parts.push(h("div", { class: "hm-sect" }, h("b", { text: "Recent" }), h("button", { class: "hm-link", type: "button", onclick: () => { haptic("tick"); setTab("chat"); } }, "Open chat")));
-      parts.push(h("section", { class: "hm-card hm-recent" }, ...recent.map((j) => h("button", { class: "hm-row", type: "button", onclick: () => { haptic("tick"); S.conv = j.conversation; store.setRaw("afp_conv", S.conv); setTab("chat"); } },
+      cards.push(h("div", { class: "hm-sect" }, h("b", { text: "Recent" }), h("button", { class: "hm-link", type: "button", onclick: () => { haptic("tick"); setTab("chat"); } }, "Open chat")));
+      cards.push(h("section", { class: "hm-card hm-recent" }, ...recent.map((j) => h("button", { class: "hm-row", type: "button", onclick: () => { haptic("tick"); S.conv = j.conversation; store.setRaw("afp_conv", S.conv); setTab("chat"); } },
         h("span", { class: "hm-ric " + (j.status === "done" ? "ok" : j.status === "failed" || j.status === "rejected" ? "bad" : "warn") }, ico(j.status === "done" ? "check" : j.status === "failed" ? "alert" : "clock")),
         h("div", { class: "grow" }, h("b", { text: shorten(j.summary || j.prompt, 48) }), h("small", { text: LABEL[j.status] || j.status })), h("time", { text: ago(j.created_at) })))));
+    } else if (S.loaded && !S.offline) {
+      cards.push(h("section", { class: "hm-card hm-empty" }, ico("chat"),
+        h("div", {}, h("h2", { text: "Start with something simple" }), h("p", { text: "Open Chat and try \"list\" to see your workspace. Your recent requests will appear here." }),
+          h("button", { class: "hm-link", type: "button", onclick: () => setTab("chat") }, "Open chat"))));
     }
-    root.replaceChildren(...parts);
+    root.replaceChildren(...parts, h("div", { class: "hm-body" }, ...cards));
+    if (S.homeEnter !== false) {   // the cards rise in once when you arrive at Home, not on every refresh (that would flicker)
+      S.homeEnter = false; root.dataset.enter = "1";
+      setTimeout(() => { delete root.dataset.enter; }, 1200);
+    }
   }
 
   /* ===================================================================== approvals: everything waiting for you, in one sheet */
@@ -2583,7 +3123,7 @@
           go,
           h("button", { class: "btn ghost", type: "button", onclick: close }, "Back to the PIN"),
           h("button", { class: "hm-link", type: "button", onclick: async () => {
-            if (await ask({ title: "Sign out instead?", message: "This phone is removed from your PC's list and its saved chats are deleted from it. You connect again with a new code.", ok: "Sign out", cancel: "Keep trying", tone: "danger", icon: "logout" })) { Lock.off(); S.skipSignOutAsk = true; signOut(); }
+            if (await ask({ title: "Sign out instead?", message: "Its saved chats are deleted from this phone. You connect again with a new code, as the same phone.", ok: "Sign out", cancel: "Keep trying", tone: "danger", icon: "logout" })) { Lock.off(); S.skipSignOutAsk = true; signOut(); }
           } }, "Sign out of this phone instead")));
       this.el.append(panel);
       api("/devices").then((r) => r.json()).then((d) => { if (d.mode === "windows") { userRow.hidden = false; user.value = d.owner || ""; passLabel.textContent = "Windows password"; } }).catch(() => {});
@@ -2595,10 +3135,64 @@
       try { window.AfpApp.biometric("Unlock Access"); } catch { window.__afpBio = null; }
     },
   };
+  /* Approving a request asks the same question as the app lock does, so a borrowed phone that is already open can't approve anything: the fingerprint (or face) when the
+     person turned that on for the lock, the PIN otherwise. Without an app lock, or with "Confirm approvals" off, it is a plain tap as before. */
+  Object.assign(Lock, {
+    confirming: null,
+    approveOn() { const c = this.conf(); return !!(c && c.hash && c.approve !== false); },
+    approveBio() { const c = this.conf(); return this.approveOn() && !!c.bio && this.bio(); },
+    /** Resolves true when the person proved it is them, false if they cancelled. `reason` says what is being approved. */
+    confirm(reason) {
+      if (!this.approveOn()) return Promise.resolve(true);
+      if (this.confirming) return this.confirming;
+      const c = this.conf(), len = c.len || 4, canBio = this.approveBio();
+      return (this.confirming = new Promise((resolve) => {
+        let typed = "", over = false;
+        const dots = h("div", { class: "lk-dots", "aria-hidden": "true" }, ...Array.from({ length: len }, () => h("i")));
+        const msg = h("p", { class: "cfm-msg", role: "status", text: canBio ? "Touch the fingerprint sensor, or type your PIN." : "Type your PIN." });
+        const paint = () => [...dots.children].forEach((d, i) => d.classList.toggle("on", i < typed.length));
+        const finish = (ok) => {
+          if (over) return; over = true;
+          document.removeEventListener("keydown", onKey); window.__afpBio = null;
+          this.confirming = null; this.unlockedAt = Date.now();   // (coming back from the system prompt must not lock the app again)
+          card.classList.add(ok ? "ok" : "out"); if (ok) haptic("success");
+          setTimeout(() => wrap.remove(), ok ? 420 : 220);
+          resolve(ok);
+        };
+        const wrong = (text) => { typed = ""; paint(); msg.textContent = text; dots.classList.remove("shake"); void dots.offsetWidth; dots.classList.add("shake"); haptic("error"); };
+        const tryPin = () => {
+          if (Date.now() < this.waitUntil) { wrong(`Too many tries. Wait ${Math.ceil((this.waitUntil - Date.now()) / 1000)} s.`); return; }
+          if (this.check(typed)) { this.fails = 0; finish(true); return; }
+          this.fails += 1;
+          if (this.fails % 5 === 0) { this.waitUntil = Date.now() + Math.min(300, 30 * (this.fails / 5)) * 1000; wrong("Too many tries. Wait a moment."); } else wrong("That PIN is not right.");
+        };
+        const press = (d) => { if (over || typed.length >= len) return; haptic("tick"); typed += d; paint(); if (typed.length === len) setTimeout(tryPin, 90); };
+        const onKey = (e) => { if (/^[0-9]$/.test(e.key)) press(e.key); else if (e.key === "Backspace") { typed = typed.slice(0, -1); paint(); } else if (e.key === "Escape") finish(false); };
+        const key = (label, fn, cls = "") => h("button", { class: "lk-key " + cls, type: "button", onclick: fn, "aria-label": /^[0-9]$/.test(label) ? label : undefined }, label);
+        const ask = () => {
+          if (!canBio || over) return;
+          msg.textContent = "Touch the fingerprint sensor, or type your PIN.";
+          window.__afpBio = (ok) => { window.__afpBio = null; if (over) return; if (ok) finish(true); else { msg.textContent = "That didn't match. Try again, or type your PIN."; haptic("warning"); } };
+          try { window.AfpApp.biometric("Approve this request"); } catch { window.__afpBio = null; }
+        };
+        const bioBtn = canBio ? h("button", { class: "lk-key ghost", type: "button", "aria-label": "Use fingerprint", onclick: ask }, ico("scan")) : h("span");
+        const back = h("button", { class: "lk-key ghost", type: "button", "aria-label": "Delete", onclick: () => { typed = typed.slice(0, -1); paint(); } }, ico("arrowLeft"));
+        const pad = h("div", { class: "lk-pad" }, ...["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => key(d, () => press(d))), bioBtn, key("0", () => press("0")), back);
+        const card = h("div", { class: "cfm-card", role: "dialog", "aria-modal": "true", "aria-label": "Confirm it is you" },
+          h("div", { class: "cfm-fp", "aria-hidden": "true" }, h("span", { class: "cfm-ring" }), h("span", { class: "cfm-ring r2" }), ico(canBio ? "scan" : "lock", 34)),
+          h("h2", { text: "Confirm it's you" }), h("p", { class: "cfm-reason", text: reason || "Approve this request" }), dots, msg, pad,
+          h("button", { class: "btn ghost cfm-cancel", type: "button", onclick: () => finish(false) }, "Cancel"));
+        const wrap = h("div", { class: "cfm" }, card);
+        wrap.addEventListener("pointerdown", (e) => { if (e.target === wrap) finish(false); });
+        document.body.append(wrap); document.addEventListener("keydown", onKey);
+        setTimeout(ask, 280);   // the fingerprint prompt comes by itself; the PIN pad is right there if it doesn't
+      }));
+    },
+  });
   // Coming back to the app after a while behind another one: ask again (after the delay chosen in Settings).
   document.addEventListener("visibilitychange", () => {
     if (!Lock.on()) return;
-    if (document.hidden) { if (!Lock.el) Lock.hiddenAt = Date.now(); }  // (the system fingerprint prompt can also make the page "hidden" for a moment: that is not leaving)
+    if (document.hidden) { if (!Lock.el && !Lock.confirming) Lock.hiddenAt = Date.now(); }  // (the system fingerprint prompt can also make the page "hidden" for a moment: that is not leaving)
     else if (!Lock.el && Date.now() - Lock.unlockedAt > 2500 && Lock.hiddenAt && Date.now() - Lock.hiddenAt >= ((Lock.conf().after || 0) * 1000)) Lock.show();
   });
 
@@ -2665,6 +3259,11 @@
           const t = h("button", { class: "toggle", type: "button", role: "switch", "aria-checked": String(!!c.bio), "aria-label": "Use fingerprint" });
           t.onclick = () => { const cur = Lock.conf(); Lock.save({ ...cur, bio: !cur.bio }); t.setAttribute("aria-checked", String(!cur.bio)); haptic("tick"); };
           items.push(setRow({ icon: "scan", label: "Use fingerprint or face", sub: "Open the app with your phone's own unlock. The PIN always works too.", control: t }));
+        }
+        {
+          const t2 = h("button", { class: "toggle", type: "button", role: "switch", "aria-checked": String(c.approve !== false), "aria-label": "Confirm approvals" });
+          t2.onclick = () => { const cur = Lock.conf(); const next = cur.approve === false; Lock.save({ ...cur, approve: next }); t2.setAttribute("aria-checked", String(next)); haptic("tick"); };
+          items.push(setRow({ icon: "check", label: "Confirm approvals", sub: "Approving a request asks for your fingerprint or face (if that is on above), or your PIN. A borrowed phone that is already open can't approve anything.", control: t2 }));
         }
         rows.push(card(...items));
         rows.push(h("div", { class: "actions" },
@@ -2927,7 +3526,7 @@
 
   async function signOut() {
     const already = S.skipSignOutAsk; S.skipSignOutAsk = false;
-    if (!already && !(await ask({ title: "Sign out of this phone?", message: "This phone is removed from your PC's list and its saved chats are deleted from it. You can connect again any time with a new code.", ok: "Sign out", cancel: "Stay signed in", tone: "danger", icon: "logout" }))) return;
+    if (!already && !(await ask({ title: "Sign out of this phone?", message: "Its saved chats are deleted from this phone and it can't reach the PC until you connect again with a new code. The PC keeps its entry, so connecting again is still this same phone.", ok: "Sign out", cancel: "Stay signed in", tone: "danger", icon: "logout" }))) return;
     Lock.off(); closeAllSheets();
     // With accounts on, this phone is removed from the PC's list, so its token is dead even if someone copied it.
     if (S.info && S.info.accounts) { try { await api("/device", { method: "DELETE" }); } catch { /* already gone, or the PC is off: forget it here anyway */ } }
@@ -2949,12 +3548,12 @@
   const Push = {
     info: null,
     native: !!(window.AfpApp && window.AfpApp.enablePush),
-    async load() { try { this.info = await api("/push"); } catch (e) { if (e.code === 401) throw e; this.info = null; } return this.info; },
+    async load() { try { this.info = await (await api("/push")).json(); } catch (e) { if (e.code === 401) throw e; this.info = null; } return this.info; },
     /** Why notifications can't be turned on here, or "" when they can. */
     why() {
       const i = this.info;
       if (!i) return "Checking…";
-      if (!i.enabled) return "Not set up on this PC yet (push: in config.yaml).";
+      if (!i.enabled) return "Not set up on this PC yet" + (i.why ? ": " + i.why : " (push: in config.yaml).");
       if (this.native) return i.fcm ? "" : "This PC isn't set up to notify the app yet.";
       const apple = /iPhone|iPad|iPod/.test(navigator.userAgent);
       const installed = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
@@ -2977,12 +3576,12 @@
       if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
       await this.send({ kind: "web", ...sub.toJSON() });
     },
-    async send(body) { const r = await api("/push/subscribe", { method: "POST", body: JSON.stringify(body) }); this.info.subscribed = r.subscribed; store.setRaw("afp_push", "1"); },
+    async send(body) { const r = await (await api("/push/subscribe", { method: "POST", body: JSON.stringify(body) })).json(); this.info.subscribed = r.subscribed; store.setRaw("afp_push", "1"); },
     async disable() {
       store.del("afp_push");
       if ("serviceWorker" in navigator) { try { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && (await reg.pushManager.getSubscription()); if (sub) await sub.unsubscribe(); } catch { /* nothing to remove */ } }
       if (window.AfpApp && window.AfpApp.disablePush) window.AfpApp.disablePush();
-      try { const r = await api("/push/unsubscribe", { method: "POST", body: JSON.stringify({}) }); if (this.info) this.info.subscribed = r.subscribed; } catch (e) { if (e.code === 401) return; throw e; }
+      try { const r = await (await api("/push/unsubscribe", { method: "POST", body: JSON.stringify({}) })).json(); if (this.info) this.info.subscribed = r.subscribed; } catch (e) { if (e.code === 401) return; throw e; }
     },
     /** On every start: if it was on, make sure the PC still has this phone's current address (browsers and Firebase change it now and then). */
     async refreshQuietly() {
@@ -3068,7 +3667,7 @@
         paint();
       };
       const test = on ? setRow({ icon: "bell", label: "Send a test", sub: "Lock your phone first to see it arrive.", onclick: async () => {
-        try { const r = await api("/push/test", { method: "POST" }); toast(r.sent ? "Sent. It should arrive in a moment." : r.errors[0] || "Nothing was sent"); } catch (e) { toast(e.message || "Couldn't send"); }
+        try { const r = await (await api("/push/test", { method: "POST" })).json(); toast(r.sent ? "Sent. It should arrive in a moment." : r.errors[0] || "Nothing was sent"); } catch (e) { toast(e.message || "Couldn't send"); }
       } }) : null;
       row.replaceChildren(setRow({ icon: "bell", label: "Notifications", sub: reason || (on ? "On for this phone." : "Tell me when a plan is ready or a job finishes."), control: b }), test);
     };
@@ -3102,13 +3701,49 @@
     ];
   }
 
+  /* What to hear about, and when not to. Saved on the PC (per phone), so it holds even when this page is closed. */
+  const PREF_ROWS = [
+    ["approval", "bell", "Plans and folders waiting for you", "A plan is ready to approve, or a folder needs your OK."],
+    ["done", "check", "A request finished", "Only for ones that took a while."],
+    ["failed", "alert", "A request failed", ""],
+    ["pc", "power", "Your PC going away", "Going to sleep, restarting, shutting down, or the battery is low."],
+    ["security", "shield", "Security alerts", "A new phone paired, wrong codes tried, access paused. These ignore quiet hours."],
+  ];
+  function prefsBox() {
+    const box = h("div", { class: "prefs" });
+    let prefs = null, saving = 0;
+    const save = async () => {
+      const mine = ++saving;
+      try { const next = await (await api("/push/prefs", { method: "POST", body: JSON.stringify(prefs) })).json(); if (mine === saving) prefs = next; }
+      catch (e) { if (e.code !== 401) toast(e.message || "Couldn't save that."); }
+    };
+    const paint = () => {
+      if (!prefs) { box.replaceChildren(h("i", { class: "sk row" }), h("i", { class: "sk row" })); return; }
+      const sw = (on, label, change) => { const b = h("button", { class: "toggle", type: "button", role: "switch", "aria-checked": String(!!on), "aria-label": label });
+        b.onclick = () => { const v = b.getAttribute("aria-checked") !== "true"; b.setAttribute("aria-checked", String(v)); haptic("tick"); change(v); }; return b; };
+      const time = (key, label) => { const i = h("input", { class: "text-input time-input", type: "time", value: prefs.quiet[key], "aria-label": label }); i.onchange = () => { if (i.value) { prefs.quiet[key] = i.value; prefs.quiet.tz = -new Date().getTimezoneOffset(); save(); } else i.value = prefs.quiet[key]; }; return i; };
+      const quiet = h("div", { class: "set col" }, h("div", { class: "set-text" }, h("div", { class: "set-label", text: "Quiet hours" }),
+        h("div", { class: "set-sub", text: "Nothing is sent to this phone between these times, except security alerts. It is not saved for later." })),
+        h("div", { class: "quiet-times" }, h("label", {}, h("span", { text: "From" }), time("start", "Quiet hours start")), h("label", {}, h("span", { text: "Until" }), time("end", "Quiet hours end"))));
+      quiet.hidden = !prefs.quiet.on;
+      box.replaceChildren(card(
+        ...PREF_ROWS.map(([key, icon, label, sub]) => setRow({ icon, label, sub, control: sw(prefs.types[key], label, (v) => { prefs.types[key] = v; save(); }) })),
+        setRow({ icon: "moon", label: "Quiet hours", sub: prefs.quiet.on ? `${prefs.quiet.start} to ${prefs.quiet.end}` : "Off", control: sw(prefs.quiet.on, "Quiet hours", (v) => { prefs.quiet.on = v; prefs.quiet.tz = -new Date().getTimezoneOffset(); quiet.hidden = !v; save(); paint(); }) }),
+        quiet));
+    };
+    paint();
+    api("/push/prefs").then((r) => r.json()).then((d) => { prefs = d; paint(); }).catch(() => { box.replaceChildren(h("p", { class: "set-sub", style: "padding:8px 4px", text: "Can't load these right now." })); });
+    return box;
+  }
   function buildNotify() {
     const info = S.info;
     return [
       sect("Notifications"),
       card(notifyRow()),
+      Push.on() ? sect("What to hear about") : null,
+      Push.on() ? prefsBox() : null,
       h("p", { class: "set-sub", style: "padding:8px 4px", text: "A notice that a plan is ready or a job finished, even when this page is closed. By default it never says what you asked: only that something needs you." }),
-    ];
+    ].filter(Boolean);
   }
 
   function buildLook() {
@@ -3124,8 +3759,9 @@
       card(
         segRow("theme", "Theme", [["dark", "Dark"], ["light", "Light"], ["system", "System"]], () => applyLook()),
         h("div", { class: "set col" }, h("div", { class: "set-text" }, h("div", { class: "set-label", text: "Accent colour" })), swatches),
-        segRow("text", "Text size", [["s", "Small"], ["m", "Medium"], ["l", "Large"]], () => applyLook()),
-        toggleRow("reduceMotion", "Reduce motion", "Turns off animations", "palette", () => applyLook())),
+        segRow("text", "Text size", [["s", "Small"], ["m", "Medium"], ["l", "Large"]], () => applyLook())),
+      sect("Graphics and motion"),
+      card(motionBox()),
       sect("Feedback"),
       card(
         toggleRow("haptics", "Haptic feedback", canVibrate ? "A small buzz on taps, approvals and results." : "This browser can't vibrate (iPhone browsers don't allow it).", "vibrate", () => haptic("success")),
@@ -3170,6 +3806,49 @@
     ];
   }
 
+  /* "Your data and control": what this app can and can't reach, who is connected, anything worth a second look, and the panic button. */
+  async function pauseAccess() {
+    const ok = await ask({ title: "Pause all phone access?", message: "Every phone, including this one, is shut out of your PC right away, and anything running is stopped. Nothing is deleted. Only you can turn it back on, on the PC itself.", ok: "Pause everything", cancel: "Keep going", tone: "danger", icon: "shield" });
+    if (!ok) return;
+    try { await api("/pause", { method: "POST" }); haptic("warning"); toast("Paused. This phone is shut out too."); ping(); schedulePing(1500); }
+    catch (e) { if (e.code !== 401) { toast(e.message || "Couldn't pause."); haptic("error"); } }
+  }
+  function buildTrust() {
+    const info = S.info;
+    if (!info) return [card(h("div", { style: "padding:6px 14px", "aria-label": "Loading" }, h("i", { class: "sk row" }), h("i", { class: "sk row" }), h("i", { class: "sk row" })))];
+    const f = info.folders, aiKind = info.ai.kind;
+    const people = h("div", { class: "set" }, setIco("phone"), h("div", { class: "set-text" }, h("div", { class: "set-label", text: "Phones that can reach this PC" }), h("div", { class: "set-sub", text: "Checking…" })));
+    const alerts = h("div", { class: "card trust-alerts" }, h("p", { class: "set-sub", style: "padding:12px 14px", text: "Checking…" }));
+    api("/security").then((r) => r.json()).then((d) => {
+      const n = d.devices;
+      people.replaceWith(setRow({ icon: "phone", label: `${n} phone${n === 1 ? "" : "s"} can reach this PC`, sub: "See them, or remove one you don't recognise.", onclick: () => { haptic("tick"); openSettingsPage(settingsModules().find((m) => m.key === "devices")); } }));
+      alerts.replaceChildren(...(d.alerts.length
+        ? d.alerts.map((a) => h("div", { class: "trust-alert", "data-tone": a.tone }, h("span", { class: "adot", "aria-hidden": "true" }), h("div", { class: "grow" }, h("b", { text: a.text }), a.who ? h("small", { text: a.who }) : null), h("time", { text: ago(a.time) })))
+        : [h("p", { class: "set-sub", style: "padding:12px 14px", text: "Nothing unusual lately. New phones, wrong codes and pauses show up here." })]));
+    }).catch(() => { people.querySelector(".set-sub").textContent = "Can't check right now."; alerts.replaceChildren(h("p", { class: "set-sub", style: "padding:12px 14px", text: "Can't check right now." })); });
+    return [
+      h("p", { class: "trust-lead", text: "You decide what this app can reach. It asks before it changes anything, and every change can be undone." }),
+      sect("What it can reach"),
+      card(
+        setRow({ icon: "folder", label: "Only the folders you chose", sub: `${f.writable.length} it may change (with your approval) · ${f.read_only.length} read-only · ${(f.granted || []).length} you allowed later` }),
+        setRow({ icon: "lock", label: "Secrets stay out of reach", sub: "Passwords, keys and protected system places are never opened." }),
+        setRow({ icon: "terminal", label: "Commands", sub: info.commands_enabled ? "On. Each one needs your approval and shows the whole command. The safety filter is a speed bump, not a sandbox." : "Off.", control: h("span", { class: "pill " + (info.commands_enabled ? "warn" : "ok"), text: info.commands_enabled ? "On" : "Off" }) })),
+      sect("What leaves this PC"),
+      card(setRow({ icon: aiKind === "hosted" ? "cloud" : "cpu", label: aiKind === "hosted" ? "Hosted AI" : aiKind === "local" ? "AI on this PC" : "No AI model",
+        sub: aiKind === "hosted" ? `${info.ai.model}. Your requests and the file text it reads are sent to that service.` : aiKind === "local" ? `${info.ai.model}. Nothing leaves this PC.` : "Typed commands only. Nothing is sent to an AI.",
+        control: h("span", { class: "pill " + (aiKind === "hosted" ? "warn" : "ok"), text: aiKind === "hosted" ? "Leaves PC" : "Private" }) })),
+      sect("Your control"),
+      card(
+        setRow({ icon: "shield", label: "Approval comes first", sub: `Asks before: ${info.approval.required_for.join(", ")}. Queued requests are never approvals.` }),
+        setRow({ icon: "undo", label: "File changes can be undone", sub: "Each change is saved first, so Undo puts files back. It can't take back a command, a file already sent to your phone, or an app that was opened." }),
+        people),
+      sect("Worth a second look"),
+      alerts,
+      h("div", { class: "actions", style: "margin-top:18px" }, h("button", { class: "btn danger block", type: "button", onclick: pauseAccess }, ico("shield"), "Pause all phone access")),
+      h("p", { class: "set-sub", style: "padding:8px 4px", text: "Pause shuts every phone out at once. Only you can turn it back on, on the PC itself, never from a phone." }),
+    ];
+  }
+
   function buildPc() {
     const info = S.info;
     return [
@@ -3179,11 +3858,44 @@
     ];
   }
 
+  /* A plain-text summary for a support request. No token, no request text, no file names: only how the app and the link are doing. */
+  function diagnosticsText() {
+    const info = S.info || {};
+    return [
+      `AccessFromPhone ${info.version || "?"}`, `Time: ${new Date().toISOString()}`,
+      `Link: ${S.online ? "connected" : "not connected"}${S.lostCause ? " (" + S.lostCause + ")" : ""}${PC.rtt ? ", " + PC.rtt + " ms" : ""}${S.away ? ", chose to keep chatting" : ""}`,
+      `Secure link: ${info.https ? "https" : "http"}`, `AI: ${info.ai ? info.ai.kind : "?"}`,
+      `Queued requests: ${Q ? Q.active().length : "n/a"}`, `Saved chats on this phone: ${cfg.saveChats ? "on" : "off"}`,
+      `Notifications: ${Push.on() ? "on" : "off"}`, `Page: ${window.AfpApp ? "Android app" : "browser"}`, `Browser: ${navigator.userAgent}`,
+    ].join("\n");
+  }
+  async function copyDiagnostics() {
+    const text = diagnosticsText();
+    try { await navigator.clipboard.writeText(text); toast("Copied. Paste it into your message to support."); haptic("success"); }
+    catch { await ask({ title: "Diagnostics", message: text, ok: "Close", cancel: "", icon: "info" }); }
+  }
+  async function clearQueue() {
+    const n = Q ? Q.items().length : 0;
+    if (!n) { toast("Nothing is waiting in the queue."); return; }
+    const yes = await ask({ title: `Clear ${n} queued request${n > 1 ? "s" : ""}?`, message: "They have not been sent to your PC yet. They will be gone, and nothing will run.", ok: "Clear them", cancel: "Keep them", tone: "danger", icon: "trash" });
+    if (!yes) return;
+    Q.clear(); haptic("success"); toast("Queue cleared");
+  }
   function buildAbout() {
-    const info = S.info;
+    const info = S.info, links = (info && info.links) || {};
+    const link = (icon, label, sub, url) => h("a", { class: "set", href: url, target: "_blank", rel: "noopener noreferrer" }, setIco(icon), h("div", { class: "set-text" }, h("div", { class: "set-label", text: label }), h("div", { class: "set-sub", text: sub })), ico("chevron"));
     return [
       card(setRow({ icon: "sparkle", label: "Take the tour", sub: "How it works, in about 30 seconds.", onclick: () => { closeSheet(); setTimeout(() => openOnboarding(), 320); } })),
       card(kv("Version", info ? info.version : "…"), kv("Secure link", info ? (info.https ? "On (https)" : "Off (http)") : "…"), kv("Signed in", S.token ? "Yes" : "No")),
+      sect("Help"),
+      card(
+        setRow({ icon: "copy", label: "Copy diagnostics", sub: "Version and connection details for support. No passwords, requests or file names.", onclick: copyDiagnostics }),
+        links.support ? link("info", "Get help", "Opens the support page.", links.support) : null,
+        links.privacy ? link("shield", "Privacy policy", "Opens the privacy page.", links.privacy) : null),
+      sect("This phone"),
+      card(
+        setRow({ icon: "clock", label: "Clear the request queue", sub: Q && Q.items().length ? `${Q.items().length} waiting to be sent` : "Nothing waiting", onclick: clearQueue }),
+        setRow({ icon: "logout", label: "Forget this PC", sub: "Signs this phone out and removes the chats kept on it. Pair again to come back.", onclick: signOut })),
       h("div", { class: "actions", style: "margin-top:14px" },
         h("button", { class: "btn ghost", type: "button", onclick: resetSettings }, "Reset settings")),
     ];
@@ -3194,13 +3906,14 @@
     const info = S.info;
     const ai = info ? (info.ai.kind === "hosted" ? "Hosted AI" : info.ai.kind === "local" ? "AI on this PC" : "No AI model") : "…";
     return [
+      { key: "trust", icon: "shield", title: "Your data and control", sub: "What it can reach · Pause", build: buildTrust },
       { key: "device", icon: "user", title: "Profile and phone", sub: `${displayName()}${info && info.device ? " · " + info.device.name : ""}`, build: buildDevice },
       { key: "notify", icon: "bell", title: "Notifications", sub: Push.on() ? "On" : "Off", build: buildNotify },
       { key: "look", icon: "palette", title: "Look and feel", sub: `${THEME_NAME[cfg.theme] || "Dark"} · ${cfg.accent}${cfg.haptics ? "" : " · no buzz"}`, build: buildLook },
       { key: "voice", icon: "mic", title: "Voice and input", sub: langInfo(cfg.lang)[1], build: buildVoice },
       { key: "devices", icon: "phone", title: "Connected devices", sub: "Who is using this PC", build: buildDevices },
       { key: "lock", icon: "shield", title: "App lock", sub: Lock.on() ? "On" : "Off", build: buildLock },
-      { key: "downloads", icon: "download", title: "Downloads", sub: DL.count() ? DL.count() + " in progress or paused" : "Resume, pause, delete", build: () => DL.mount() },
+      { key: "downloads", icon: "download", title: "Downloads", sub: DL.count() ? DL.count() + " in progress or paused" : "Resume, pause, delete", build: () => [DL.mount()] },
       { key: "chats", icon: "clock", title: "Chats and privacy", sub: cfg.saveChats ? "Recent chats kept on this phone" : "Nothing kept on this phone", build: buildChats },
       { key: "pc", icon: "gauge", title: "This PC", sub: ai, build: buildPc },
       { key: "about", icon: "info", title: "About", sub: info ? `Version ${info.version}` : "", build: buildAbout },
@@ -3209,7 +3922,7 @@
 
   function openSettingsPage(mod) {
     const body = h("div", { class: "set-page" });
-    const fill = () => body.replaceChildren(...mod.build());
+    const fill = () => body.replaceChildren(...mod.build().filter(Boolean));
     fill();
     const sheet = openSheet({ title: mod.title, body, route: "settings-" + mod.key });
     S.refillPage = () => { if (body.isConnected) { const keep = sheet.body.scrollTop; fill(); sheet.body.scrollTop = keep; } };
@@ -3238,7 +3951,7 @@
       h("div", { class: "set-text" }, h("div", { class: "set-label", text: info.ai.kind === "hosted" ? "Hosted AI" : info.ai.kind === "local" ? "AI on this PC" : "No AI model" }),
         h("div", { class: "set-sub", text: info.ai.kind === "hosted" ? `${info.ai.model}. Your requests and the file text it reads leave this PC.` : info.ai.kind === "local" ? `${info.ai.model}. Nothing leaves this PC.` : "Typed commands only. See the README to add one." })),
       h("span", { class: "pill " + aiTone, text: info.ai.kind === "hosted" ? "Leaves PC" : info.ai.kind === "local" ? "Private" : "Off" }));
-    const cmd = setRow({ icon: "terminal", label: "Run commands", sub: info.commands_enabled ? `Each one needs your approval. Stops after ${info.command_timeout_seconds}s.` : "Turned off.", control: h("span", { class: "pill " + (info.commands_enabled ? "warn" : "ok"), text: info.commands_enabled ? "On" : "Off" }) });
+    const cmd = setRow({ icon: "terminal", label: "Run commands", sub: info.commands_enabled ? `Each one needs your approval, and you see the whole command. A safety filter blocks known-dangerous ones, but it is a speed bump, not a sandbox, so read every command. Stops after ${info.command_timeout_seconds}s.` : "Turned off.", control: h("span", { class: "pill " + (info.commands_enabled ? "warn" : "ok"), text: info.commands_enabled ? "On" : "Off" }) });
     const list = (items) => h("ul", { class: "paths" }, items.length ? items.map((p) => h("li", { text: p })) : [h("li", { text: "None" })]);
     return h("div", {}, card(ai, cmd,
       h("div", { class: "set col" }, h("div", { class: "set-text" }, h("div", { class: "set-label", text: "Folders it can change" }), h("div", { class: "set-sub", text: "Read, search and, with your approval, change." })), list(info.folders.writable)),
@@ -3248,7 +3961,7 @@
         (info.folders.granted_details || []).length
           ? h("div", { class: "granted" }, info.folders.granted_details.map((g) => h("div", { class: "granted-row" },
               h("span", { class: "granted-path", text: g.path }), h("span", { class: "pill " + (g.change ? "warn" : "ok"), text: g.change ? "Can edit" : "Read only" }),
-              h("button", { class: "btn sm danger", type: "button", onclick: () => revokeAccess(g.path) }, "Remove"))))
+              g.shared && !g.mine ? h("span", { class: "pill", title: "The Admin shared this folder with this phone", text: "Shared with you" }) : h("button", { class: "btn sm danger", type: "button", onclick: () => revokeAccess(g.path) }, "Remove"))))
           : h("p", { class: "set-sub", text: "None yet. I'll ask when I need one." })),
       kv("Asks before", info.approval.required_for.join(", ")), kv("Approval times out", `${info.approval.timeout_minutes} min`),
       kv("Largest download", info.max_download_mb ? `${info.max_download_mb} MB` : "No limit"), kv("Remembers", `${info.memory_turns} earlier messages`)));
@@ -3312,9 +4025,8 @@
   }
   function exportAudit() {
     const blob = new Blob([JSON.stringify(S.audit, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob), d = new Date();
-    const a = h("a", { href: url, download: `audit-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json` });
-    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); haptic("success");
+    const d = new Date();
+    saveBlob(blob, `audit-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`);
   }
 
   function voiceHelp(reason) {
@@ -3548,7 +4260,7 @@
       } else if (line.trim()) {
         const para = [];
         while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|```|>|\s*(?:[-*+]|\d+\.)\s)/.test(lines[i])) para.push(lines[i++]);
-        i--; root.append(inline(para.join(" "), h("p")));
+        i--; root.append(inline(para.join("\n"), h("p")));
       }
     }
     return root;
@@ -3649,6 +4361,7 @@
       openFile: (path, from) => openFile(path, "view", { from }),
       openGallery: (folder) => openGallery(folder),
       askAccess,
+      shareFolder: (path, done) => { if (Access) Access.shareFolder(path, done); },
       copy: copyText,
       download: async (path) => { try { await api("/browse/offer?path=" + encodeURIComponent(path), { method: "POST" }); } catch (e) { toast(e.message); haptic("error"); return; } download(path); },
     };
@@ -3677,9 +4390,11 @@
     }
     return imagingLoad;
   }
+  /** Saves something the page made itself (a picture, a file being edited, the audit log), with the same landing animation as every other download. */
   function saveBlob(blob, name) {
     const url = URL.createObjectURL(blob), a = h("a", { href: url, download: name });
-    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); haptic("success");
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+    if (!DL.land(name, () => {}, "Saved to this device")) haptic("success");
   }
   /** What the picture screens may use from the app: its helpers, and the PC (always with this phone's token). */
   function imgCtx() {
@@ -4005,8 +4720,7 @@
       let blob;
       if (isText) blob = new Blob([CV.area.value], { type: "text/plain;charset=utf-8" });
       else { try { blob = await mediaBlob(info); } catch { toast("Couldn't fetch the file."); return; } }
-      const url = URL.createObjectURL(blob), a = h("a", { href: url, download: info.name });
-      document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); haptic("success");
+      saveBlob(blob, info.name);
     }
 
     el.replaceChildren(head, tools, sub, banner, findBar, body, foot);
@@ -4111,9 +4825,19 @@
 
 
   document.addEventListener("keydown", (e) => {
+    const topSheet = S.sheets[S.sheets.length - 1];
+    const focusScope = S.dialog ? $(".dlg-wrap:not(.out)") : topSheet && !topSheet.custom ? topSheet.wrap : null;
+    if (e.key === "Tab" && focusScope && !openMenu) {
+      const controls = [...focusScope.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href], summary, [tabindex="0"]')].filter((el) => el.getClientRects().length);
+      const first = controls[0], last = controls[controls.length - 1], active = document.activeElement;
+      if (!first) { e.preventDefault(); return; }
+      if (!focusScope.contains(active) || (e.shiftKey && (active === first || active.matches(".sheet"))) || (!e.shiftKey && active === last)) {
+        e.preventDefault(); (e.shiftKey ? last : first).focus(); return;
+      }
+    }
     if (e.key === "Escape") {
       if (S.dialog) { S.dialog(false); return; }
-      const scanner = $(".scan");
+      const scanner = $(".scan[role='dialog']");
       if (scanner) { $(".scan-x", scanner).click(); return; }
       if (openMenu) closeMenu(); else if (S.sheets.length) closeSheet(); else if (document.body.classList.contains("drawer")) closeDrawer();
     } else if (e.key === "/" && !/^(INPUT|TEXTAREA)$/.test((document.activeElement || {}).tagName || "") && !S.sheets.length) {
@@ -4134,7 +4858,11 @@
   $("#scroller").addEventListener("scroll", () => { S.stick = atBottom(); $("#jump").hidden = S.stick; }, { passive: true });
   $("#jump").append(ico("arrowDown"));
   if ("ResizeObserver" in window) new ResizeObserver(() => $(".main").style.setProperty("--dock-h", $("#dock").offsetHeight + "px")).observe($("#dock"));
-  $("#jump").addEventListener("click", () => { S.stick = true; haptic("tick"); $("#scroller").scrollTo({ top: $("#scroller").scrollHeight, behavior: "smooth" }); });
+  $("#jump").addEventListener("click", () => {
+    S.stick = true; haptic("tick");
+    const reduced = calmMotion();
+    $("#scroller").scrollTo({ top: $("#scroller").scrollHeight, behavior: reduced ? "auto" : "smooth" });
+  });
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); S.deferredInstall = e; });
   document.addEventListener("visibilitychange", () => { if (document.hidden) { if (V.phase !== "idle") voiceEnd(true); } else refresh(); syncTicks(); });
   window.addEventListener("blur", () => { if (V.phase !== "idle" && V.held) voiceEnd(true); });
@@ -4157,7 +4885,10 @@
   function start() {
     Lock.show();  // before anything else: a locked app shows nothing until the PIN is in
     const splash = $("#splash");
-    if (splash) { splash.addEventListener("animationend", (e) => { if (e.animationName === "sp-out") splash.remove(); }); setTimeout(() => splash.remove(), 7000); }  // (it removes itself when its fade ends; this is only a safety net)
+    if (splash) {
+      if (getComputedStyle(splash).display === "none") splash.remove();
+      else { splash.addEventListener("animationend", (e) => { if (e.animationName === "sp-out") splash.remove(); }); setTimeout(() => splash.remove(), 1500); }
+    }
     applyLook();
     if (store.get("afp_side_collapsed", false)) document.body.classList.add("side-collapsed");
     chooseMode();
@@ -4171,9 +4902,15 @@
     if (pairFromUrl) { const el = showAuth() || $(".auth"); if (el) { S.token = ""; connect(pairFromUrl, el); } }
     else if (!S.token && bootRoute === "offline") bootSaved();
     else if (!S.token) showAuth(); else { refresh().then(() => { update(true); }); loadInfo(); loadPcStatus(); }
-    setInterval(() => { if (!document.hidden && S.token) loadPcStatus(); }, 20000);
+    // The Wi-Fi speed and battery next to each other refresh every 2 seconds, but only while the screen is on, the PC is reachable and nothing else is asking.
+    setInterval(() => { if (!document.hidden && S.token && !S.offline && Link && Link.state === "connected") loadPcStatus(); }, 2000);
     loop();
     schedulePing();  // the heartbeat that notices the PC going quiet
+    if (Q) {
+      Q.onChange(() => { if (S.model) update(true); paintAway(); if (S.tab === "home" && S.model) renderHome(); });
+      setInterval(queueTick, 3000);  // hands held requests over as soon as the PC answers, and marks the ones that waited too long
+      setTimeout(flushQueue, 1500);  // requests held before the app was closed go out once it is connected
+    }
     // Deep links such as /#/settings open that sheet without adding a second history entry.
     const route = (location.hash || "").replace(/^#\/?/, "");
     const file = /^file\/(view|edit)\/(.+)$/.exec(route), gallery = /^gallery\/(.+)$/.exec(route), folderRoute = /^folder\/(.*)$/.exec(route);
@@ -4190,5 +4927,5 @@
     Push.refreshQuietly();
   }
 
-  start();
+  start();  
 })();

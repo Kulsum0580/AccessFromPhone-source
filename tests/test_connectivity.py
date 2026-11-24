@@ -162,12 +162,12 @@ def test_the_anywhere_qr_needs_anywhere_to_be_on_first(pc):
     assert admin.post("/admin/pairing", json={"via": "anywhere"}, headers=H).status_code == 409
     assert admin.post("/admin/connection/anywhere", headers=H).json()["active"] is True
     link = admin.post("/admin/pairing", json={"via": "anywhere"}, headers=H).json()["link"]
-    assert link.startswith("https://afza-pc.tail1234.ts.net:8443/?pair=")
+    assert link.startswith("https://afza-pc.tail1234.ts.net:8443/#pair=")
 
 
 def test_the_wifi_qr_is_unchanged_without_a_body(pc):
     admin, _ = pc
-    assert "/?pair=" in admin.post("/admin/pairing", headers=H).json()["link"]
+    assert "/#pair=" in admin.post("/admin/pairing", headers=H).json()["link"]
 
 
 # ---------------------------------------------------------------- staying awake and being found

@@ -36,6 +36,12 @@ After a change you can **Download** the file or **Undo** it.
 
 The window on the PC (the page with the connect code) is a small dashboard: a menu on the left and one section at a time.
 
+The dashboard and phone page use a calm cyan palette, readable secondary text, and consistent cards and touch targets. The PC dashboard reorganizes into a single column on small windows, keeping all six navigation labels visible. Home uses two columns on wide screens and a scrollable single column on phones. Settings and confirmation dialogs support keyboard navigation, Escape, and return focus when closed. Live Home readings update without replacing the controls.
+
+Chat uses gently drifting, AI-inspired kinetic typography and compact response cards on phones and desktops. The decorative background follows the selected accent, becomes a little brighter while Access is thinking, listening or speaking, and stays still with system reduced motion or the app's Reduce motion setting. Replies support safely rendered Markdown headings, lists, tables and code blocks while retaining plain-text line breaks. Wide tables and code scroll within the response; answers and approval details are not truncated. New messages use brief opacity/transform entrances and also respect reduced motion.
+
+**UI regression checks:** `python tests/e2e/ui_e2e.py` checks widths from 320 to 1440 pixels, large text, light and dark phone themes, secondary-text contrast, keyboard focus, file browsing, and reduced motion. These browser checks use temporary app data; they do not use your account or paired phones. Run the existing Home, dashboard, Files and navigation browser tests as well before releasing. Rebuild the Android APK to include the updated bundled offline page.
+
 - **Overview:** a greeting, four live readings (processor, memory, disk free, battery), your phones, whether unlocking is set up, how phones reach this PC, the latest activity in plain words, and a compact QR code and pairing code to connect another phone.
 - **Phones:** the full connect card (Same Wi-Fi or Anywhere), and every phone with Rename, Block and Remove.
 - **Unlock:** set up, switch off or on, start trying again, or remove the saved sign-in (see "Unlocking a locked PC by asking").
@@ -99,6 +105,8 @@ A phone paired on the Wi-Fi address stays tied to that address. Pair it again fr
 **When the PC sleeps.** While the app runs it asks Windows not to sleep (`power.keep_awake: true`; the screen can still turn off), which is the most reliable fix. If the PC does go off or to sleep, the phone says so, shows when it was last reachable, and has a **Try now** button. Waking a sleeping PC remotely (Wake-on-LAN) needs it turned on in the BIOS and network adapter, and something awake on that network to send the signal (a router, a Raspberry Pi, or a Tailscale subnet router), because a sleeping PC can't wake itself and a phone's browser can't send it. The PC page shows this PC's MAC address for that.
 
 **Putting the PC to sleep from the phone.** Say "put my PC to sleep", "lock my PC", "hibernate my laptop", "restart my PC" or "shut down my PC". You get an approval card and nothing happens until you tap Approve. The phone is told "done" first and the PC acts a few seconds later. `power.remote_actions` decides what the phone may ask for; the default is `lock` and `sleep`, and `hibernate`, `restart` and `shutdown` are off until you add them. Restart and shut down count down for 15 seconds, so a mistake can be cancelled at the PC with `shutdown /a`. A sleeping PC can't be woken from the phone (see above), so the card says so before you approve. Only plain commands count: "how do I put my PC to sleep?" is answered as a question. Windows only.
+
+**Screen off, PC still on.** The Home screen has a **Screen off** button (or say "black out my screen"). After you approve it, the PC's own monitor goes black and, on a laptop, its backlight is turned right down to 0%, which also saves real power. The PC keeps running, and the phone still sees and controls the real desktop, pointer included. The button then becomes **Screen on** ("turn on my screen"). The black is a click-through window hidden from screen capture (needs Windows 10 version 2004 or newer; on an older Windows it refuses and says so). It deliberately does **not** switch the display off: on a PC with "Modern Standby" (run `powercfg /a` and look for "S0 Low Power Idle") Windows freezes every program, this app included, and may drop the Wi-Fi once the display is off, so the phone could no longer reach the PC. While it is up the app asks Windows not to sleep or turn the display off. **Touching the PC's own mouse or keyboard takes the black away** and gives the brightness back (the first touch is swallowed, so it never clicks something hidden). Mouse and keys sent from the phone do not. The panic key, quitting the app and **Screen on** also remove it, and if the app crashes while the laptop is dark the brightness is put back at the next start (`datalackout.json` holds it meanwhile), so nobody is left with a black or dark screen. A desktop PC's own monitor has no backlight control from software, so there it is the black cover alone. `power.remote_actions` decides whether the phone may ask (`screen_off` is on by default; `screen_on` comes with it). Do not set Windows to turn the screen off after a minute on a Modern Standby PC if you want to reach it from the phone.
 
 ## Your own relay (reach the PC from anywhere, with your domain)
 
@@ -307,7 +315,7 @@ Your chats live on the PC, so with the PC off or out of reach the phone used to 
 
 - **What is kept.** The newest chats, whole (never half a chat): up to 50 chats or about 3 MB, whichever comes first, oldest dropped first. Very long results are shortened in the copy. It is saved a few seconds after something changes, and only if something did.
 - **Where it is kept.** On the phone only; it is never sent anywhere. In a browser it is in the browser's own storage for this page; in the Android app it is a private file inside the app (one per PC), because the app's built-in page, which is the only one that can open when the PC is off, can't read the web view's storage for the PC's address.
-- **How you reach it.** When the PC can't be reached, the "can't reach your PC" screen (in the page, and in the app's first screen) has a **View saved chats** button next to Try again and Switch PC. A banner then says *"Your PC is offline. Reading chats saved 12 minutes ago. Nothing can be sent until it is back."*
+- **How you reach it.** When the PC can't be reached, the "can't reach your PC" screen (in the page, and in the app's first screen) has a **View saved chats** button next to Try again and Switch PC. A banner then says *"Your PC is offline. Reading chats saved 12 minutes ago. Nothing can be sent until it is back."* On small screens it is a compact, single-line marquee with a fixed Try again button. Scrolling pauses on hover or keyboard focus; reduced motion disables the animation and lets you scroll the notice manually.
 - **It is read-only.** The message box is switched off and says why; New chat, approvals, downloads, file browsing and everything else that needs the PC are not offered, and anything that slips through says the PC is offline instead of failing. Switching chats and copying text still work.
 - **It ends by itself.** The page keeps looking for the PC (and the app also looks when Wi-Fi changes or you come back to it). The moment the PC answers, the banner goes, the live chats load and the message box works again. In the app, Back from the saved chats returns to the "can't reach your PC" screen.
 - **It is wiped** when you sign out, when the PC removes this phone, when you forget the PC in the app, when you switch **Keep recent chats on this phone** off in Settings (on by default), or tap **Clear saved chats**.
@@ -342,6 +350,8 @@ Optional lists in `config.yaml` under `agent:`
 
 - `allowed_folders`: can be read, searched and, with your approval, changed. The first one is where relative paths start.
 - `read_only_folders`: always readable without asking, **never** changed, even if you tap Approve. A read-only folder may not sit inside a writable one.
+**Folders belong to the phone that was asked.** A folder allowed on one phone is that phone's own: other phones don't have it, don't see it in their list and can't open it, just like chats. A phone only takes back its own folders. The folders in `config.yaml` (and the read-only ones) are the PC's own and stay open to every phone. **The Admin phone sees everything**: in **My files** it lists every folder any phone asked for, with which phone allowed it and who else has it. **Long-press a folder** (or tap its three dots) for *Open folder, Pictures in this folder, Copy path, Details* and, for the Admin only, **Share**. Share lists the other phones: switch on the ones that should get the folder and pick *Read only* or *Can edit* for each (a share never gives more than the owner had), then tap **Share**. That phone can open the folder straight away, with no question asked. The sheet answers clearly: a green *Shared with ...* when it worked, or a red *Not shared* with the reason and **Try again** (your choices are kept) when it didn't. Share also stops sharing, and *Remove this folder for everyone* takes it back. Sharing is only done on the Admin phone; the PC page has no folder controls. A phone that was given a folder sees it in Settings marked *Shared with you*, and can't remove it. When a phone is removed its folders go with it; when it only signs out they stay for when it comes back. Folders allowed before this change belong to no phone: each phone is asked again, and the Admin and the PC can still see them. The Admin phone also gets **Everyone's requests**: who asked what and when, with the state, newest first, read only. The conversations themselves (the answers, the steps) stay private to each phone.
+
 - `ask_for_access`: `true` (the default) asks as described above. `false` is strict mode: only the two lists are ever used, and anything else is refused with the lines to add to `config.yaml`.
 
 Each job card on the phone lists what the AI actually looked at ("Looked at: searched C:\PageLogin for *.bak: 1 found"). Check it before trusting an answer.
@@ -373,16 +383,16 @@ To try another model, change `llm.model` in `config.yaml` and pull it first. On 
 
 ## The opening animation
 
-Every launch, on the phone page, in the app and in the PC's window, starts with a 5 second opening. For the first three seconds it builds up: a ring draws itself and the dot pops in, the name rises letter by letter, then "Your PC, from your pocket." and "Ask in plain words. You approve every change.", with a thin progress line filling below. For the last two seconds the mark and the name **glow**, twice, like a light breathing. Then the whole screen fades out into the app (Home, or the sign-in screen if you aren't connected yet). The build-up only moves things by position and fade, so it is smooth on any phone. With the phone's "reduce motion" on, or the Reduce motion switch in Settings, it is a brief 1.3 second fade instead, with no glow. To switch it off, set `afp_splash_off` to `1` in the page's storage (the browser tests do).
+The phone page and PC window show a brief, 0.8-second introduction once per browser session. It does not intercept taps, replay on reload, or add a pretend loading progress bar. The mark and name settle in and fade out without repeated glow effects. The introduction is skipped entirely with system reduced motion or the phone page's Reduce motion setting. To switch it off explicitly, set `afp_splash_off` to `1` in the page's storage.
 
-**Checking it:** `python tests/e2e/splash_e2e.py` (timing, the glow only in the last two seconds, hand-over to Home, the off switch, reduced motion, and the PC's window).
+**Checking it:** `python tests/e2e/splash_e2e.py` (completion within 1.5 seconds, hand-over to Home, the off switch, reduced motion, and the PC's window).
 
 ## Home and the tab bar
 
-The page opens on **Home**, a control center for the PC, and the chat is one tab among four. On a phone a bar at the bottom switches between **Home**, **Chat**, **Files** (the file browser) and **PC** (the live status). The bar is on every screen size, so a wide window uses it too.
+The page opens on **Home**, a control center for the PC, and the chat is one tab among four. On a phone a bar at the bottom switches between **Home**, **Chat**, **Files** (the file browser) and **Settings**. The PC's live status opens from the Wi-Fi and battery chips at the top. The bar is on every screen size, so a wide window uses it too.
 
 **Home shows** (kept short, so it fits a phone screen without scrolling much)
-- **The PC's state:** its name and whether it is online and its battery at the top, then a card that says **Locked** or **Unlocked**, with processor, memory and disk free.
+- **The PC's state:** its name, online status and battery at the top. **Locked** or **Unlocked** appears only in the main PC card, alongside processor, memory and disk free, rather than being repeated in the header.
 - **The one thing you are likely to want:** a big **Unlock** button when the PC is locked and unlocking is set up (it opens the chat with the approval and the PIN box), otherwise **Lock**, with **Sleep** beside it. Only the power actions that `power.remote_actions` allows are offered.
 - **What needs you:** an amber banner "1 request needs you" when a request is waiting for your approval, which takes you straight to it. The Chat tab also shows how many are waiting.
 - **A first-run checklist ("Get set up, 2 of 4 done"):** connect your phone, allow a folder, turn on notifications, set up unlocking. Each unfinished step has a button; "Hide this" removes the card for good, and it goes by itself once everything is done.
@@ -390,6 +400,31 @@ The page opens on **Home**, a control center for the PC, and the chat is one tab
 - If the PC cannot be reached and saved chats exist, Home says so and offers to read them; nothing on it can be sent until the PC is back.
 
 Files, Pictures, Battery and the rest are one tap away in the tab bar, or by asking in the chat.
+
+## Everyday tools
+
+Below the PC card, Home has a **Control centre** card for the things people do on a PC every day. It appears only when `daily.enabled` is on (the default) and the PC answers; the page fetches its script on demand, so a PC with it off sends nothing extra.
+
+The whole phone page has a "premium glass" look (`glass.css`, loaded after `app.css`): a soft coloured glow behind frosted panels, gradient icon tiles, springy buttons, skeleton shapes while things load, and small pictures for empty lists. It follows the dark/light theme and accent colour, falls back to solid panels where the phone cannot blur, and calms down with the system's reduce-motion setting or the app's Motion option. Gestures (`ux.js`): **swipe a row left** to delete or unpin it (a drag past about two thirds, or a hard flick, deletes; the PC must agree or the row slides back), and **pull a tool sheet down** to refresh it. **Tapping a tab** plays a short oil-paint transition, each one in its own style: thick bristled brush strokes sweep over the page, the screen opens underneath, and the paint is scraped away. **Chat** paints waves in your accent colour (the chat switches on underneath); the **PC** tab is a blue screen being scanned from the top, with faint screen lines and a "Your PC" title; **Files** is a stack of warm amber slabs dealt down the page like papers, with a dropping folder icon; **Settings** is a violet-and-pink spiral winding out from the middle like a dial being turned, which opens like an iris as it is scraped away. They are drawn on a canvas with a 3D tilt and a moving light (Motion Simple draws them flat, Motion Off or reduce-motion skips them, a tap skips one and still opens the screen; tapping another tab while one plays finishes it first).
+
+| Tool | What it does | Who may (access level) |
+|---|---|---|
+| **Volume and brightness sliders, media keys** | Drag a glass slider to set the PC's real volume (it shows the real level, and the speaker icon mutes) or a laptop screen's brightness (sent when you let go; a desktop monitor says it can't). Previous / play-pause / next are the same keys a keyboard's media row sends. Below Operator the sliders show the level but cannot be moved, and the media keys are hidden. | Operator |
+| **Inbox** | **To the PC:** send text, a link or files from the phone (up to `daily.max_upload_mb`), or drag files onto the sheet on a tablet or computer; each file shows its own progress bar, speed and time left, and can be cancelled. Text can go on the PC's clipboard, a link can be opened in the PC's browser (asks first). Files land in `Inbox` and are never opened or run by the app; a program or script is marked. **To this phone:** files you drop in the `To phone` folder on the PC show up to save. | Send/remove: Editor. Clipboard and open link: Operator. Looking and saving: any |
+| **Notes** | Type or dictate a note or to-do. Saved as plain text, one file a day (`Notes 2026-05-04.md`) in the `Notes` folder, so any program can open them. | Editor |
+| **Remind** | A reminder, or a power action (lock, sleep, ...) at a time, once or daily, on weekdays or weekly. Only what `power.remote_actions` allows; hibernate, restart and shut down need the Admin phone. A task the PC missed (it was off) never runs a power action late; a missed reminder still arrives, marked late. Each scheduled action is confirmed when you set it and is logged. | Operator |
+| **Watch** | "Tell me when…" a program stops, a new download finishes arriving (it must stop growing; a browser's half-file never counts), or the processor goes quiet for half a minute. It can then lock or sleep the PC. Fires once, then goes away. | Operator |
+| **Recent** | Windows' recent files and places you pin. Tapping one opens it through the normal Files rules, so a folder not allowed yet asks first. | Pin: Editor. Looking: any |
+| **Snap** | A full-size screenshot (it needs the same owner's yes on the PC as looking at the screen; the Owner's own phone is let through as it is for looking), saved in `Screenshots`. A **webcam** photo is off by default (`daily.webcam`, needs `opencv-python`), Admin phone only, logged, and every phone is told. | Operator; webcam: Admin |
+| **Print** | Prints a recent document on the PC's default printer after you confirm which printer. Documents, spreadsheets, slides, text and pictures only; never programs. | Operator |
+| **PC alerts** | Shows this PC's Windows notifications on the phone. **Off by default** (`daily.notifications`) because they can hold private messages. Read from a copy of Windows' notification list and kept in memory only; hiding one only hides it on the phone. | Looking: any. Hide: Editor |
+| **Briefing** | Battery, memory, disk, how long the PC has been up, Windows updates waiting, what is scheduled in the next 24 hours, what is being watched, files waiting, and the programs using the most memory. | Any |
+
+How they follow the app's rules: every request needs a paired phone and obeys **Pause**; a change needs your level and, like every change, your turn (a phone that may not do something never takes the turn by trying); every use is written to the activity log (that it happened, never the text of a note, a clipboard or a message). Reminders and finished watchers also reach a locked phone as notifications; the words are in the notification only when `push.show_details` is on, otherwise it just says there is something to see. Settings are in the `daily:` section of `config.yaml`; the files are kept in `daily.folder` (default `Documents\AccessFromPhone`).
+
+**Limits:** the phone downloads a file through the page, so very large files are better fetched from Files. The volume slider reads and sets the PC's real level through Windows' audio service; brightness goes through Windows' display service (about a second, laptop screens only). PC notifications can be hidden on the phone but not dismissed on the PC, and replying to them is not possible. A webcam photo needs `pip install opencv-python`. The Android app's built-in page includes the new look, but the app itself has not been rebuilt or tested with it.
+
+**Checking it:** `pytest tests/test_daily_core.py tests/test_daily_http.py tests/test_daily_assets.py`, `node tests/js/daily_test.js`, `node tests/js/ux_test.js`, and `python tests/e2e/daily_e2e.py` (a real browser against a real PC app, with the volume, brightness, keys, printer and webcam stood in for, so it changes nothing on this PC; it drags the sliders and swipes rows with a real mouse). `python tests/e2e/shots_e2e.py <folder> [width] [dark|light|both]` saves a screenshot of every screen for a visual check; `python tests/e2e/paint_e2e.py [folder]` plays the four tab transitions (Chat, PC, Files, Settings) frame by frame in a real browser (and saves the frames). The other browser tests that tap tabs either start with Motion Off or wait for the paint to finish.
 
 **In the chat**, suggestion chips sit above the message box ("Unlock my PC" when the PC is locked, otherwise "Lock my PC"; "Open my folders", "Battery", "My pictures"). Tapping one asks it at once. They hide while you type.
 
@@ -403,7 +438,8 @@ The screen you were on is remembered. The app's built-in saved-chats page always
 
 - **Profile and phone:** the name shown on this phone, this phone's name on the PC, and Sign out.
 - **Notifications:** turn them on or off.
-- **Look and feel:** theme, accent colour, text size, reduce motion, haptic feedback and dial ticks.
+- **Look and feel:** theme, accent colour, text size, **Graphics and motion** (Full 3D, Simple or Off: Simple keeps the same look with flat, gentle animation, Off stops all movement; a phone that looks low-end starts on Simple, and one set to "remove animations" on Off), haptic feedback and dial ticks.
+- **App lock and approvals:** with the app lock on, **Confirm approvals** (on by default) makes Approve ask for your fingerprint or face (if "Use fingerprint or face" is on) or your PIN, so a borrowed phone that is already open can't approve anything. Turn it off for a plain tap.
 - **Voice and input:** speaking language, microphone, how input starts, the voice button, sending when you stop talking, reading replies aloud and their speed.
 - **Chats and privacy:** audit trails open, keep recent chats on this phone, clear saved chats, the activity log, and bring back removed chats.
 - **This PC:** what the PC is set to do (read only: changed in config.yaml on the PC).
@@ -418,7 +454,7 @@ It is a chat, like the AI apps you know, and it works on a phone, a tablet and a
 - **Chats.** Every conversation is saved on the PC in `data/audit.log`, so your chat list is still there after a restart. Use **New chat** to start fresh (the AI only remembers the chat it is in). Rename or remove a chat from its ⋯ menu. Removing only hides it on that phone; the PC's record is kept.
 - **Stop.** While the AI is thinking or a command is running, the send button turns into a red stop button (and there is a **Stop** button under "Thinking…"). Pressing it kills a running command and its child processes, or hangs up on the model so a local model stops working at once. The job shows as **Stopped**; if it had already changed files, **Undo** is still offered. If the model is just slow, the reply falls back to showing the file the app already read.
 - **Audit trail.** Under every reply, tap **Audit trail** to see each step the PC took, with times. **Settings, then Activity log** lists everything, can be filtered, and exports as JSON.
-- **Settings** (tap your name, bottom left, or the avatar on a phone): theme (dark, light, system), accent colour, text size, reduce motion, voice options, haptics, and a read-only view of what this PC may do (AI, folders, commands, approvals). Those PC settings are changed in `config.yaml`, never from the phone.
+- **Settings** (tap your name, bottom left, or the avatar on a phone): theme (dark, light, system), accent colour, text size, graphics and motion (Full 3D, Simple, Off), voice options, haptics, and a read-only view of what this PC may do (AI, folders, commands, approvals). Those PC settings are changed in `config.yaml`, never from the phone.
 - **Add to home screen** in your browser menu to open it like an app, full screen.
 - On a computer: Enter sends, Shift+Enter adds a line, `/` jumps to the message box, Alt+N starts a new chat.
 
@@ -487,11 +523,124 @@ Off by default. Set `commands.enabled: true` and the AI may *propose* a command 
 
 - You always see the exact command and must tap **Approve**. This cannot be switched off.
 - It runs only inside a writable folder, stops after `commands.timeout_seconds`, and secrets in the environment (names containing KEY, TOKEN, SECRET, PASSWORD) are hidden from it.
-- A built-in block list (`commands.deny`) refuses things like `format`, `shutdown`, `iex`, registry edits and SSH keys. Treat it as a safety net, not a guarantee.
+- A built-in block list (`commands.deny`) refuses things like `format`, `shutdown`, `iex`, registry edits and SSH keys. It is a **speed bump, not a sandbox**: encoded or split-up commands and other tools can get around it. What protects you is that commands are off by default and every one shows its **whole** command on the approval card and waits for your tap. Read it before you approve.
 - To allow only specific commands, set `commands.allow_only: ["git status", "npm test"]`. Chaining (`;`, `&`, `|`) is then refused.
 - Commands cannot be undone, and the AI does not see their output, so it proposes everything it needs at once.
 
+## Who can do what, and one person at a time
+
+**Owner, Admin, users.** The PC is the Owner: its page (`http://127.0.0.1:8766`, this PC only) is the one place that picks the **Admin phone** and can resume after Pause. The Admin phone is the Owner's own phone (by default the first one paired); from it you can set other phones' levels, end or take over someone's turn, and press Pause. Everyone else is a user. A phone can only ask: the PC checks every request itself.
+
+**Levels** (set on the PC page under Phones → *Who can do what*, or by the Admin phone on its **Access** screen, up to Operate):
+
+| Level | Can |
+|---|---|
+| View | look and read; never change anything or approve a change |
+| Edit | also change files (each change is saved first, so Undo works) |
+| Operate | also run approved commands, open apps, lock and sleep |
+| Admin | also unlock, restart, shut down, and manage people |
+
+A newly paired phone is **Operate**. Unlocking and restarting now need the Admin phone.
+
+**One person at a time.** Anyone can look, browse and read. Making a change needs *your turn*, and only one phone has it. It starts when you start it (Access tab → *Start my turn*) or by itself when you send a request while the PC is free. Someone else's phone is told who is using the PC and can **ask for a turn**: the person using it gets a question (60 s) and can hand it over or keep going. A holder who is busy and doesn't answer keeps it; one who has gone (no check-in for 60 s) or is idle (5 min) loses it. After "I'm still using it", that phone waits 2 minutes before asking again. The Admin phone can take over or end a turn at once. Pause ends every turn. Plans still waiting when a turn ends are cancelled, so the next person can't answer them.
+
+```yaml
+access:
+  enabled: true          # false = every paired phone acts freely, as in older versions
+  lease_seconds: 60
+  idle_minutes: 5
+  ask_seconds: 60
+  cooldown_seconds: 120
+```
+
+### Looking at, and controlling, the PC's screen
+
+Access tab → **View the PC's screen**, or just type "I want to access my PC screen" in the chat. The phone shows a live picture of the PC's main display. Looking is the default; **controlling** (mouse and keyboard) is a separate switch, described below. Tap **Full screen** for a landscape view that fills the phone: the phone is locked to landscape where the browser allows it, and where it doesn't (iPhone), the picture turns sideways to fill the screen when the phone is held upright. The controls (Exit, Stop, Quality, Zoom) float over the picture and fade away; a tap brings them back. Double-tap zooms.
+
+* **Nobody sees the screen without the Owner's yes, given on the PC, except the Admin phone** (the Owner's own phone), which may look without asking each time; the PC still shows it (see below) and Stop is always there. Set `screen.admin_needs_yes: true` to ask even the Admin phone. Any other phone asks (with an optional note). A small always-on-top window appears on the PC with **Allow 15 min / Allow 1 hour / Always / Deny**; the same request is on the PC page under Phones → *Screen viewing*. The Owner can also pre-approve a phone there (an hour, or until taken back) for when nobody is at the PC. No phone, not even the Admin phone, can approve itself or another phone.
+
+**While someone is looking** a soft light runs round the edge of the PC's screen (cyan to look, red when they control) and a small **●  ▾** tab sits at the top middle. Click the tab to see who is looking, and **Stop**; click it again to fold it away. The light is click-through, so it never gets in the way, and it stays up the whole time so viewing is never hidden. Questions that need an answer (Allow or Deny) still appear as a card.
+* **It is never secret.** While a phone looks, the window on the PC says who, with a **Stop** button (the PC page has one too), and it shows in the picture the phone sees.
+* **One viewer at a time.** It ends by itself when the permission runs out, when the phone stops asking for pictures (20 s), on **Pause**, when the phone leaves the screen, or when the Owner stops it.
+* **Looking is not a turn.** It never needs, takes or blocks someone's turn. A view-only phone can look (if allowed), and view-only phones no longer take turns at all.
+* **Limits.** A locked PC or a Windows permission prompt shows nothing (Windows keeps those away from normal programs). Only the main display is shown, and the mouse pointer is not drawn. Pictures are JPEGs, a few a second. Over the internet they pass through your relay, so for now it is best on the same Wi-Fi.
+
+```yaml
+screen:
+  enabled: true      # false = no phone can ever see this PC's screen
+  idle_seconds: 20
+  ask_seconds: 120
+  banner: true       # the edge light, the tab and the question card on this PC
+  admin_needs_yes: false   # true = even the Admin phone must be allowed each time
+  control: true      # false = no phone can ever move the mouse or type on this PC
+  audio: true        # false = a phone can never listen to this PC's sound
+  clipboard: true    # false = no copy and paste of text between phone and PC
+  panic_key: "ctrl+alt+shift+x"   # pressed on THIS PC's keyboard: cuts looking and control at once ("" = off)
+  release_after_seconds: 5        # a mouse button or key still held with no word from the phone this long is let go
+```
+
+**Keys, shortcuts and the clipboard.** The **Keys** panel has four tabs. *Keys*: Esc, Tab, Ctrl/Alt/Shift/Win (tap to hold for the next key), arrows, Del, Backspace, Enter, and a text box for typing. *F & nav*: F1 to F12, Home, End, Page Up/Down, Insert, Print Screen. *Shortcuts*: Copy, Paste, Cut, Undo, Redo, Select all, Save, Find, Alt+Tab, Win+D (show the desktop), Task Manager, and Close (Alt+F4, which asks for a second tap, because closing cannot be undone). A shortcut is one press: its keys go down together and come up together on the PC, so Ctrl or Alt is never left held. *Clipboard*: **Paste on PC** sends the text you copied on the phone (or typed in the box) to the PC's clipboard and presses Ctrl+V there; **Copy selection** presses Ctrl+C on the PC and brings the text to your phone; **Get PC clipboard** brings whatever the PC copied. Text only, up to 100,000 characters. The clipboard needs control to be on (it can show a password you just copied), and every use is written to the activity log (that it happened and how long the text was, never the text).
+
+**Controlling from another computer.** Open the same page on a computer and take control: its own mouse and keyboard work as at the PC. The pointer is simply where the mouse is (no steering), left, middle and right buttons and dragging work, and the mouse wheel and a touchpad scroll. **Click the picture and your keyboard types on the PC** (a "Typing on the PC" chip shows it; tap the chip, or click away, to take your keyboard back): letters come out as typed, and Ctrl, Alt and Windows-key shortcuts work, so Ctrl+A, Ctrl+Z, Alt+Tab and F5 are the PC's. **Copy and paste between the two:** Ctrl+V on your computer sends its copied text to the PC and pastes it there; Ctrl+C on the PC brings what it copied onto your computer's clipboard. Text only (images and files do not travel; use *Download from this screen* for files). A browser keeps a few shortcuts for itself (Ctrl+W, Ctrl+T, Ctrl+N, Alt+F4 and the Windows key on its own), and Windows keeps Ctrl+Alt+Del. Phones behave as before.
+
+**A sharper picture.** The best Auto step is now the PC's own width (1920 px, no shrinking, with full colour detail so coloured text and thin lines stay clean), and Auto climbs to it in a few seconds on a good link (it steps down at once if pictures slow). When nothing on the PC's screen changes for two pictures, one extra-sharp picture is sent and the phone then rests, only peeking now and then (small, about five a second) to see whether anything moved. Touching, typing or moving the view brings the live pictures back at once. That saves battery and bandwidth as well as sharpening still text. **A mouse that keeps up.** While you control, the mouse and keys travel on their own fast lane (one open WebSocket to the PC) instead of a new web request for every batch, so a move never waits behind a picture; tested on this PC, the slowest tenth of moves went from about 20 to 64 ms down to 3 to 6 ms. While you are moving the mouse or typing, the picture stays what you chose (Sharp stays Sharp); Auto only steps down when pictures arrive slowly enough to make the screen answer late (a stricter wait than when you just look), and never below 1024 px, so text does not turn to blur; the sharpest picture returns a moment after you stop. The status line shows the mouse's round trip ("mouse 12 ms") while you control, and the picture's `data-lane` says `fast` or `request`. Where the fast lane cannot be opened (your own relay, if it does not pass WebSockets) the ordinary requests carry on as before. Moves leave the phone about once a frame.
+
+**Sound.** **Options → Sound → On** plays what the PC is playing on the phone, only while you are looking, and only for the phone that is looking (it stops when you stop). It is captured from the PC's speakers (Windows loopback, through the `PyAudioWPatch` package, installed with the app) and sent as 16 kHz mono (about 32 KB a second), so voices are clear and music is fine but not hi-fi. The sound is about a third of a second behind. The PC page says when someone is listening. Switch it off for everyone with `screen.audio: false`.
+
+**Nothing stays held down, and the panic key.** If a phone's connection drops in the middle of a drag, the PC lets go of the mouse button (and any key) after `release_after_seconds` of silence; a finger held still during a drag sends a small "still here" so a long drag is not cut. Stopping, handing control back and the PC's Stop also let go of everything. Control does **not** resume by itself after a dropped connection: the looking ends after `idle_seconds`, and you tap Control again. **The panic key** (default **Ctrl+Alt+Shift+X**, pressed on the PC's own keyboard, which no phone can press) stops whoever is looking, lets go of everything, takes back every phone's permission to control (the Admin phone too) and refuses control for two minutes. Looking can then be allowed again from the PC; the phone says what happened. The banner on the PC names the key. If another program already uses the combination, the PC app starts without it (change `screen.panic_key`).
+
+**The time left is always visible.** A small label in the corner of the picture says how long the PC owner allowed this phone to look or control (*Control - 12 min left*). It turns amber under three minutes, red and pulsing under one, and the phone says so; the Admin phone has no limit, so shows none.
+
+**Quality follows your network.** *Quality: Auto* (the default) watches how long each picture takes: it steps the size down at once on a slow link and back up slowly on a fast one, so you get fewer pictures a second instead of a growing delay. Fast, Balanced and Sharp fix it; the label shows the size Auto chose and the status line says how the network is doing.
+
+**The viewer.** A status line shows what is happening (Live or Controlling, pictures a second, size, and signal bars for the network). Under the picture is a dock of seven icon-over-label buttons: **Stop**, **Control**, **Keys**, **Pad**, **Options**, **Zoom**, **Full**. Options holds picture quality (Auto, Fast, Balanced, Sharp) and the mouse style and speed. In full screen **nothing covers the picture**: the controls live behind one dimmed round **☰ button** in the corner. Tap it and a small menu opens (Stop, Control, Keys, Pad, Options, Fill/Fit, Zoom, Exit); after each choice the menu closes and the button dims again, until you touch it. A red dot on the button says control is on, so it is never a surprise. The mouse pad sits at the bottom left, the keyboard at the top, and Options opens beside the corner. **Options → Picture → Fit / Fill**: Fit shows the whole PC screen (there can be bars if the phone is a different shape); **Fill** covers the whole display and crops a little off the edges, so nothing is left empty. **Options → Mouse → Cursor size** makes the pointer smaller or bigger (the phone's own pointer changes as you slide, and the PC's pointer in the picture follows), and Pointer speed sets how far it goes.
+
+**Controlling the PC from the phone.** Tap **Control** while looking. A phone that isn't allowed to control shows **Ask**: tap it and the PC owner sees a window with **Allow 15 min / Allow 1 hour / Deny** (and the request is on the PC page too); control switches on by itself when they allow it.
+
+**Zoom (and it stays sharp).** Pinch with two fingers, double-tap (when not controlling), press **Zoom** (2.5 times, on the pointer while controlling), or use **Options → Zoom** (1 to 5 times). Zooming does *not* enlarge the picture on the phone: the phone asks the PC for just the zoomed part (`/api/screen/frame?...&rx=&ry=&rw=&rh=`, fractions of the screen), and the PC cuts it out of its full-detail screen *before* shrinking, so you see real pixels instead of a blurry enlargement. The picture already on the phone is scaled and moved in the meantime, then swapped for the sharp one within a moment (like a map). Drag with one finger to move around when zoomed (when controlling, the view follows the pointer to the edges, and a slide moves the pointer less, so aiming is finer). A small **2.5x - Reset** label returns to the whole screen. The limit is the PC's own pixels: past roughly 1 PC pixel per phone pixel it gets bigger but not sharper, and the PC never sends more pixels than exist. On the small inline picture, before it is zoomed, the browser may keep a pinch for the page (so it can still scroll); double-tap or Zoom always work there, and in full screen a pinch always works.
+
+By default the phone works like a laptop's **trackpad**:
+
+* **one finger** slides the pointer (a quicker swipe goes further; the phone draws its own pointer, so it follows your finger at once and starts exactly where the PC's pointer is);
+* **tap** = click at the pointer, **two-finger tap** = right-click, **tap then slide** = drag, **two fingers sliding** = scroll;
+* **hold one finger still for two seconds** and a ring fills, then a **see-through mouse pad** appears: a pad you can slide on, a left and a right button, and a scroll strip. It is faint until you touch it, so the PC stays visible behind it (inline it sits under the picture). Close it with its ✕ or the **Pad** button;
+* **Options → Mouse → Touch** switches to pointing straight at things instead (tap = click where you tap, press and hold = right-click); **Pointer speed** is a slider there.
+
+**Download a file or folder you can see on the screen.** **Press and hold** a file or folder on the picture; a card offers **Download to phone** (a folder comes as one zip). Tap the round **download icon** at the top of the picture to arm it (it lights up), then touch a file once. Not sure how? Tap the **?** beside it: a short live demo in three steps (**press and hold**, **allow the folder**, **download**) plays with the app's own cards, fits any phone held upright or sideways, and closes with **Got it**. While you control the PC a long press is a right-click, so there you tap the lit download icon first and then tap the file **once** (tap the icon again to cancel). In full screen the icon and the ? sit beside the menu button, without opening the menu. The PC asks Windows what is under that spot and which folder the window shows. It works for File Explorer windows and the desktop; a file drawn inside any other program has no name Windows can give, so the card says "No file found there". It follows the usual rules: a folder the phone hasn't been given offers **Allow this folder** first, protected places are never offered, and the download limit applies. Explorer may hide extensions, so if one name fits several files the card asks which one. The download then goes through Downloads like any other, and the card follows it live (progress, size, and a big **Open** when saved).
+
+**The pointer is the PC's real pointer.** The pointer on the PC changes with what is under it (a text bar over text, a hand over a link, resize arrows, a busy ring, an app's own shape). The phone shows exactly that: while only looking, the PC draws its real pointer (with its true shape and tip) into the picture; while controlling, the phone's own pointer, which follows your finger at once, takes the shape the PC is showing. A pointer the PC has hidden (while typing, in a video) is hidden on the phone too.
+
+**A smoother picture and clearer sound.** Pictures are asked for in a pipeline (two on the way, three on a slow link) with no built-in waiting, and the PC captures the next one while the last is being sent; this PC manages about 20 a second at 800 px wide and 10 to 13 at 1280 px (its screen copy takes about 45 ms; going beyond that needs Windows' GPU capture). The sound is kept in step with the clock (no silence patched in front of a late piece) and is **Clear** (48 kHz) by default, with a **Light** choice (16 kHz) for a slow link, in the screen's Options.
+
+**Keys** opens a box for the phone's own keyboard (what you type goes to the PC) and the keys a phone lacks: Esc, Tab, Ctrl, Alt, Shift, Win, arrows, Del, Backspace, Enter. Tap Ctrl, then a letter, for Ctrl+C and the like. Everything also works in full screen, and the pointer's position and your swipes are mapped correctly even when the picture is turned sideways on an upright phone.
+
+Taking control needs **all** of these, checked by the PC on every event:
+
+1. you are looking (with the Owner's yes, or you are the Admin phone),
+2. **Operate level** or higher,
+3. **your turn** (taking control starts it if the PC is free; if someone else has it you are told, and if you lose it, control is handed back at once),
+4. the Owner's separate say-so for control: the Admin phone has it; any other phone taps **Ask** and the owner answers on the PC (the desktop window, or Phones → Screen viewing, where **Allow control too** pre-approves it). The desktop window's first Allow buttons (for looking) give looking only.
+
+The PC's window says "viewing and CONTROLLING" while it is on, with the same Stop button; the activity log records when control started and stopped. Stop, Pause, the end of a permission, or the end of your turn all end control. Windows keeps its own secure screens (sign-in, permission prompts, Ctrl+Alt+Del) away from programs, so input does nothing there. Set `screen.control: false` to make control impossible on this PC.
+
+**Not built yet (screen):** choosing another monitor or one window, sound, copy and paste between phone and PC, and a connection that doesn't pass through the relay.
+
+**Not built yet:** per-folder scope and expiry for a level, a request for a higher level, a second confirmation (PIN) for the Admin's riskiest actions, and separate chat history per person (until then, requests and results are still visible to every paired phone).
+
 ## Configure it
+
+**Privacy and support links.** Settings → About shows "Get help" and "Privacy policy" rows when you set them (https only; leave empty to hide):
+```yaml
+links:
+  privacy_url: https://example.com/privacy
+  support_url: https://example.com/support
+```
+
+**The data folder.** At start the app closes its data folder (the database, the sign-in token, saved certificates) to every other account on the PC; this Windows user and the system keep it. Turn it off with `storage.lock_data_folder: false`.
+
+**Pairing codes.** The QR code holds the code after a `#` (`https://host/#pair=XXXX-XXXX`), which a browser never sends to a server, so no proxy or relay log can hold it. QR codes from older versions (`?pair=`) still work.
+
+**Notification choices.** Settings → Notifications lets each phone switch off plans, finished jobs, failed jobs, PC notices and security alerts, and set quiet hours (security alerts and the test button ignore them; a notice held back by quiet hours is not sent later). The choices are kept on the PC, per phone.
 
 Everything is in `config.yaml`. To change the Wi-Fi address, edit `server.public_url` and restart. Any value can also be set for one run with an environment variable, for example `HANDOFF_SERVER__PORT=9000`.
 

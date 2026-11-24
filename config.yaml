@@ -14,7 +14,7 @@ server:
 
 accounts:
   enabled: true                            # the owner signs in on the PC; each phone pairs once by scanning a code. false = one shared link (testing only)
-  sign_in: password                        # auto = on Windows, sign in to the PC page with your Windows user name and password (nothing new to create).
+  sign_in: auto                            # auto = on Windows, sign in to the PC page with your Windows user name and password (nothing new to create).
                                            # password = make a separate app password at setup (used on other systems)
   admin_port: 8766                         # the PC's own page (set up, connect phones, manage them). Only reachable from this PC
   pairing_minutes: 2                       # how long a QR / pairing code works, for one phone only
@@ -39,19 +39,27 @@ relay:                                     # reach this PC from ANY network thro
   # register_key: set the HANDOFF_RELAY__REGISTER_KEY environment variable instead of writing the secret here
 
 push:                                      # notifications on a locked phone: "Plan ready - tap to approve", "Job finished"
-  enabled: false
-  notify_on: [awaiting, needs_access, done, failed, pc_sleep, pc_restart, pc_shutdown, pc_closing, pc_battery]   # pc_*: told BEFORE this PC goes away (it can't tell the phone afterwards)
+  enabled: true
+  notify_on: [awaiting, needs_access, done, failed, pc_sleep, pc_restart, pc_shutdown, pc_closing, pc_battery, pc_plugged, pc_unplugged]   # pc_*: told BEFORE this PC goes away (it can't tell the phone afterwards)
   battery_low_percent: 15                  # "PC battery is low" at this level when unplugged (and once more at 5%)
   show_details: false                      # false = a notification only says THAT something needs you, never what you asked or found (it passes through Google/Apple)
   min_seconds: 15                          # "Job finished" only for a request that took at least this long, so an instant answer does not buzz
-  # credentials_file: C:\path\to\.env   # where the push keys already are. They are READ from there, never copied into this folder.
+  credentials_file: C:\PageLogin\login-page\backend\.env   # where the push keys already are. They are READ from there, never copied into this folder.
                                            # (VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, FIREBASE_SERVICE_ACCOUNT_PATH)
   # vapid_private_key / firebase_service_account_file: or set them directly. The secret half goes in HANDOFF_PUSH__VAPID_PRIVATE_KEY, never here.
   # ca_file: only if a work network re-signs the connection and Windows' own certificates are not enough.
 
 power:
-  remote_actions: [lock, sleep]            # what the phone may ask this PC to do. Each one still waits for your approval. Add: hibernate, restart, shutdown
+  remote_actions: [lock, screen_off, sleep]            # what the phone may ask this PC to do. Each one still waits for your approval. Add: hibernate, restart, shutdown
   keep_awake: true                         # stop Windows sleeping while the app runs, so the phone can always reach the PC (the screen may still turn off)
+
+daily:                                     # everyday tools on the phone's Home screen: quick controls, inbox, notes, reminders, watchers, recent files, print, snap, briefing
+  enabled: true                            # false removes all of them
+  folder: ~/Documents/AccessFromPhone      # Inbox (sent from the phone), To phone (put files here for the phone), Notes, Screenshots
+  max_upload_mb: 100                       # the largest file the phone may send to the inbox
+  printing: true                           # print a file on this PC's default printer (each print is confirmed on the phone and logged)
+  notifications: false                     # show this PC's Windows notifications on the phone. Off by default: they can hold private messages
+  webcam: false                            # let the Admin phone take one photo with the webcam (needs: pip install opencv-python). Logged, and every phone is told
 
 agent:
   allowed_folders:
@@ -80,7 +88,7 @@ commands:                                  # let the agent run commands on this 
   # deny: [...]                            # blocked patterns (regular expressions); a safe list is built in
 
 llm:
-  provider: auto                           # auto = local model if Ollama has it, else simple commands. Or: anthropic (set ANTHROPIC_API_KEY), ollama, demo
+  provider: anthropic                      # hosted Claude: fast, and your requests + file text it reads leave this PC. Or: auto (local model if Ollama has it), ollama, demo
   hosted_model: claude-sonnet-5-5          # used when provider is anthropic. Requests then leave this PC
   api_key_env: ANTHROPIC_API_KEY           # NAME of the environment variable holding the key (never put the key here)
   memory_turns: 4                          # how many earlier requests the model is reminded of (each costs reading time)

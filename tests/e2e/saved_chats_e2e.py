@@ -120,11 +120,54 @@ def main() -> int:
         time.sleep(0.5)
         check("it opens the saved chats and the popup closes", page.js("document.body.classList.contains('is-offline')"))
         check("a banner says the PC is offline and how old the copy is", page.js("(() => { const b = document.querySelector('#savedBar'); return !b.hidden && b.textContent.includes('Your PC is offline') && /saved .* ago/.test(b.textContent); })()"), page.js("document.querySelector('#savedBar').textContent"))
+        for width in (320, 375, 412, 520, 900):
+            page.call("Emulation.setDeviceMetricsOverride", width=width, height=860, deviceScaleFactor=1, mobile=False)
+            check(f"saved-chat notice fits {width}px", page.js("""(() => {
+                const bar=document.querySelector('#savedBar');
+                return bar.scrollWidth<=bar.clientWidth+1 && document.documentElement.scrollWidth<=window.innerWidth;
+            })()"""))
+            if width <= 520:
+                check(f"saved-chat notice stays compact at {width}px", page.js("""(() => {
+                    const bar=document.querySelector('#savedBar'), retry=bar.querySelector('.saved-retry');
+                    return bar.getBoundingClientRect().height<=56 && retry.getBoundingClientRect().height>=44
+                        && getComputedStyle(bar.querySelector('.saved-track')).animationName==='saved-marquee';
+                })()"""))
+        page.call("Emulation.setDeviceMetricsOverride", width=320, height=860, deviceScaleFactor=1, mobile=False)
+        check("marquee repeats only decorative content", page.js("""(() => {
+            const copies=document.querySelectorAll('.saved-copy');
+            return copies.length===2 && copies[0].textContent===copies[1].textContent && copies[1].getAttribute('aria-hidden')==='true';
+        })()"""))
+        check("marquee actually moves", page.js("""(async () => {
+            const track=document.querySelector('.saved-track');
+            await new Promise(resolve=>setTimeout(resolve, 3000));
+            const before=getComputedStyle(track).transform;
+            await new Promise(resolve=>setTimeout(resolve, 600));
+            return before!==getComputedStyle(track).transform;
+        })()"""))
+        page.js("document.querySelector('.saved-text').focus()")
+        check("keyboard focus pauses the marquee", page.js("getComputedStyle(document.querySelector('.saved-track')).animationPlayState==='paused'"))
+        page.js("document.querySelector('.saved-text').blur()")
+        for app_motion in (False, True):
+            if app_motion:
+                page.js("document.documentElement.dataset.motion='off'")
+            else:
+                page.call("Emulation.setEmulatedMedia", features=[{"name": "prefers-reduced-motion", "value": "reduce"}])
+            check(f"{'app' if app_motion else 'system'} reduced motion keeps the notice compact and readable", page.js("""(() => {
+                const bar=document.querySelector('#savedBar'), text=bar.querySelector('.saved-text');
+                text.scrollLeft=text.scrollWidth;
+                return getComputedStyle(bar.querySelector('.saved-track')).animationName==='none'
+                    && getComputedStyle(bar.querySelector('[aria-hidden=true].saved-copy')).display==='none'
+                    && text.scrollLeft>0 && text.textContent.includes('wait on this phone')
+                    && bar.getBoundingClientRect().height<=56;
+            })()"""))
+            page.js("delete document.documentElement.dataset.motion; document.querySelector('.saved-text').scrollLeft=0")
+            page.call("Emulation.setEmulatedMedia", features=[])
+        page.call("Emulation.setDeviceMetricsOverride", width=412, height=860, deviceScaleFactor=2, mobile=False)
         check("the app is not blocked: nothing is inert", page.js("!document.querySelector('#app').hasAttribute('inert') && !document.body.classList.contains('is-lost')"))
         check("the chat list is the saved one", page.js("[...document.querySelectorAll('.conv-title')].map(e => e.textContent).sort()") == before_chats, page.js("[...document.querySelectorAll('.conv-title')].map(e => e.textContent)"))
         check("a saved chat's words can be read", any(w in page.js("document.querySelector('#thread').textContent") for w in ("battery status", "network speed", "pc status")))
-        check("the message box is switched off and says why", page.js("(() => { const f = document.querySelector('.field'); return f.disabled && f.placeholder.includes('offline'); })()"))
-        check("there is no send button to press", page.js("!document.querySelector('.send')"))
+        check("the message box stays usable and says requests will be queued", page.js("(() => { const f = document.querySelector('.field'); return !f.disabled && f.placeholder.includes('queued'); })()"))
+        check("there is a send button to press", page.js("!!document.querySelector('.send')"))
         check("buttons that need the PC are not offered in the chat", page.js("[...document.querySelectorAll('#thread .actions, #thread .files')].every(e => e.offsetParent === null)"))
         check("New chat cannot be tapped", page.js("getComputedStyle(document.querySelector('.newchat')).pointerEvents") == "none")
         page.shot("s2-reading.png")
@@ -153,7 +196,7 @@ def main() -> int:
         time.sleep(1.5)
         check("the app's built-in page shows the saved chats (not the connect screen)", page.js("document.body.classList.contains('is-offline') && !document.querySelector('.auth')"), page.js("document.body.className"))
         check("... with the same chats", sorted(page.js("[...document.querySelectorAll('.conv-title')].map(e => e.textContent)")) == before_chats)
-        check("... read only", page.js("document.querySelector('.field').disabled"))
+        check("... and the message box is usable there too", page.js("!document.querySelector('.field').disabled"))
         page.js("document.querySelector('.saved-retry').click()")
         time.sleep(0.4)
         check("its Try again asks the app to look for the PC again", page.js("window.__retried === true"))

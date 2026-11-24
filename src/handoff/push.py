@@ -20,7 +20,7 @@ import ssl
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Callable
 from urllib.parse import urlparse
@@ -269,10 +269,70 @@ class Report:
     sent: int = 0
     removed: int = 0
     failed: int = 0
+    skipped: int = 0  # phones that chose not to hear about this (a type switched off, or quiet hours)
     errors: list[str] = field(default_factory=list)
 
     def public(self) -> dict:
-        return {"sent": self.sent, "removed": self.removed, "failed": self.failed, "errors": self.errors[:3]}
+        return {"sent": self.sent, "removed": self.removed, "failed": self.failed, "skipped": self.skipped, "errors": self.errors[:3]}
+
+
+# -- what each phone chose to hear about -----------------------------------------------------------
+
+PREF_TYPES = ("approval", "done", "failed", "pc", "security")  # a plan or access waiting · a job finished · a job failed · the PC going away or low on battery · who can reach this PC
+_TYPE_OF = {"awaiting": "approval", "needs_access": "approval", "done": "done", "failed": "failed", "security": "security"}
+_ALWAYS = {"test"}  # a test the person asked for is never held back
+_NEVER_QUIET = {"security"}  # worth waking someone for
+
+
+def default_prefs() -> dict:
+    return {"types": {t: True for t in PREF_TYPES}, "quiet": {"on": False, "start": "22:00", "end": "07:00", "tz": 0}}
+
+
+def _minutes(text: str) -> int | None:
+    try:
+        h, m = text.split(":")
+        h, m = int(h), int(m)
+    except (ValueError, AttributeError):
+        return None
+    return h * 60 + m if 0 <= h < 24 and 0 <= m < 60 else None
+
+
+def clean_prefs(raw: dict | None) -> dict:
+    """What a phone sent, made safe: known types only, real times, a believable time zone. Anything odd falls back to the default."""
+    out = default_prefs()
+    raw = raw if isinstance(raw, dict) else {}
+    types = raw.get("types") if isinstance(raw.get("types"), dict) else {}
+    for t in PREF_TYPES:
+        if isinstance(types.get(t), bool):
+            out["types"][t] = types[t]
+    quiet = raw.get("quiet") if isinstance(raw.get("quiet"), dict) else {}
+    if isinstance(quiet.get("on"), bool):
+        out["quiet"]["on"] = quiet["on"]
+    for key in ("start", "end"):
+        if _minutes(quiet.get(key)) is not None:
+            out["quiet"][key] = quiet[key]
+    tz = quiet.get("tz")
+    if isinstance(tz, int) and not isinstance(tz, bool) and -840 <= tz <= 840:
+        out["quiet"]["tz"] = tz
+    return out
+
+
+def allows(prefs: dict, kind: str, now_utc: datetime) -> bool:
+    """Should a notification of this kind reach a phone with these choices, right now? (`now_utc` is the real time; quiet hours use the phone's own clock.)"""
+    if kind in _ALWAYS:
+        return True
+    group = "pc" if kind.startswith("pc_") else _TYPE_OF.get(kind)
+    if group is not None and not prefs["types"].get(group, True):
+        return False
+    quiet = prefs["quiet"]
+    if quiet["on"] and kind not in _NEVER_QUIET:
+        local = now_utc + timedelta(minutes=quiet["tz"])
+        now_min, start, end = local.hour * 60 + local.minute, _minutes(quiet["start"]), _minutes(quiet["end"])
+        if start is not None and end is not None and start != end:
+            inside = start <= now_min < end if start < end else now_min >= start or now_min < end
+            if inside:
+                return False
+    return True
 
 
 class Notifier:
@@ -309,11 +369,33 @@ class Notifier:
     def enabled(self) -> bool:
         return self.web is not None or self.fcm is not None
 
+    def why_off(self) -> str:
+        """In plain words, why this PC cannot send notifications ("" when it can). The phone shows it."""
+        if self.enabled:
+            return ""
+        if not self.cfg.enabled:
+            return "push: enabled is off in the config.yaml this app loaded"
+        return "; ".join(self.problems) or "no push keys were found"
+
     def describe(self) -> str:
         if not self.cfg.enabled:
             return "off"
         channels = [name for name, on in (("browser", self.web), ("Android app", self.fcm)) if on]
         return "on: " + " + ".join(channels) if channels else "on, but no keys found"
+
+    # what each phone chose to hear about
+
+    def prefs(self, device_id: str) -> dict:
+        row = self.db.one("SELECT data FROM push_prefs WHERE device_id=?", (device_id,))
+        try:
+            return clean_prefs(json.loads(row["data"])) if row else default_prefs()
+        except ValueError:
+            return default_prefs()
+
+    def set_prefs(self, device_id: str, raw: dict) -> dict:
+        data = clean_prefs(raw)
+        self.db.run("INSERT INTO push_prefs (device_id, data) VALUES (?, ?) ON CONFLICT(device_id) DO UPDATE SET data=excluded.data", (device_id, json.dumps(data)))
+        return data
 
     # subscriptions
 
@@ -358,9 +440,16 @@ class Notifier:
         report = Report()
         if not self.enabled:
             return report
-        sql = "SELECT s.target, s.kind, s.keys FROM push_subs s JOIN devices d ON d.id = s.device_id WHERE d.blocked = 0"
+        sql = "SELECT s.target, s.kind, s.keys, s.device_id FROM push_subs s JOIN devices d ON d.id = s.device_id WHERE d.blocked = 0"
         rows = self.db.rows(sql + (" AND s.device_id = ?" if device_id else ""), (device_id,) if device_id else ())
+        now, chosen = datetime.now(timezone.utc), {}
         for row in rows:
+            who = row["device_id"]
+            if who not in chosen:
+                chosen[who] = self.prefs(who)
+            if not allows(chosen[who], message.kind, now):  # this phone asked not to hear about that (or not at this hour)
+                report.skipped += 1
+                continue
             try:
                 if row["kind"] == "web" and self.web:
                     outcome, why = self.web.send(row["target"], json.loads(row["keys"]), message)
@@ -432,8 +521,10 @@ class Notifier:
         "pc_shutdown": ("Your PC is shutting down", "If it is only restarting, the app reconnects by itself."),
         "pc_closing": ("The app is closing on your PC", "Open it again on the PC to reconnect."),
         "pc_battery": ("Your PC's battery is low", "Plug it in, or it may switch off soon."),
+        "pc_plugged": ("Your PC is charging", "The charger is plugged in."),
+        "pc_unplugged": ("Your PC is on battery", "The charger was unplugged."),
     }
-    PC_COOLDOWN = {"pc_battery": 0.0}  # seconds before the same notice may go out again (the others: 30). Battery repeats are prevented by BatteryAlert itself
+    PC_COOLDOWN = {"pc_battery": 0.0, "pc_plugged": 5.0, "pc_unplugged": 5.0}  # seconds before the same notice may go out again (the others: 30). Battery repeats are prevented by BatteryAlert itself
     PC_TTL = {"pc_battery": 1800}        # seconds a push service may keep it for a phone that is offline (the others: 2 minutes)
 
     def notify_pc(self, kind: str, percent: int | None = None, wait: bool = False, timeout: float = 2.0) -> bool:
@@ -451,6 +542,8 @@ class Notifier:
         title, body = self.PC_TEXT[kind]
         if kind == "pc_battery" and percent is not None:
             title = f"Your PC's battery is low ({percent}%)"
+        elif kind in ("pc_plugged", "pc_unplugged") and percent is not None:
+            title = f"{title} ({percent}%)"
         message = Message(title, body, "", kind, ttl=self.PC_TTL.get(kind, 120))
 
         def work() -> None:

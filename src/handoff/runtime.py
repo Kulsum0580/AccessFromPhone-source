@@ -12,7 +12,10 @@ import uvicorn
 
 from .admin import create_admin_app
 from .config import Settings
+from . import netfix
 from .connectivity import Anywhere, advertise, host_label, keep_awake, lan_ip
+from .screen.blackout import blackout, recover
+from .secure import restrict_to_current_user
 from .server import create_app
 from .tunnel import RelayLink
 
@@ -60,6 +63,7 @@ class Running:
             return {}
 
     def stop(self) -> None:
+        blackout.close()  # nobody is left with a black screen, a dark laptop, or an app that is gone
         for server in self.servers:
             server.should_exit = True
         for stop in self._stops:
@@ -86,7 +90,25 @@ def _serve(app, host: str, port: int, name: str, quiet: bool, **extra) -> uvicor
 
 def start(settings: Settings, quiet: bool = False) -> Running:
     """Build the app and start its servers in the background. Returns at once; `Running.stop()` ends them."""
+    blackout.state_file = settings.server.token_file.parent / "blackout.json"
+    recover(blackout.state_file)  # a laptop left dark by a crash gets its brightness back
+    netfix.install()  # a phone that drops while connecting must not stop the server listening (Windows)
     app = create_app(settings)
+    if settings.screen.banner:  # the real app shows the small window on this PC; tests and servers without a desktop skip it
+        from .screen.banner import DesktopBanner
+
+        app.state.screen.banner = DesktopBanner()
+    panic = None
+    if settings.screen.panic_key:  # a key on THIS PC's keyboard that cuts a phone's control at once (a phone cannot press it)
+        from .screen.hotkey import PanicKey, describe
+
+        panic = PanicKey(settings.screen.panic_key, lambda: (app.state.screen.panic(), blackout.off()))
+        if panic.start():
+            app.state.screen.panic_hint = f"Panic key: {describe(settings.screen.panic_key)} stops this at once."
+            if hasattr(app.state.screen.banner, "hint"):
+                app.state.screen.banner.hint = app.state.screen.panic_hint
+        else:
+            panic = None
     server = settings.server
     notes: list[str] = []
     tls: dict = {}
@@ -97,6 +119,10 @@ def start(settings: Settings, quiet: bool = False) -> Running:
         tls = {"ssl_certfile": str(cert), "ssl_keyfile": str(key)}
 
     stops = []
+    if settings.storage.lock_data_folder:
+        locked = {settings.storage.database.parent, server.token_file.parent}  # where the database, the sign-in token and the saved certificates live
+        if any([restrict_to_current_user(folder) for folder in locked]):
+            notes.append("Closed the data folder to other accounts on this PC.")
     if settings.power.keep_awake and keep_awake(True):
         notes.append("Keeping this PC awake while the app runs, so your phone can always reach it.")
     if settings.connectivity.mdns:
@@ -113,6 +139,8 @@ def start(settings: Settings, quiet: bool = False) -> Running:
     app.state.anywhere = anywhere
     threading.Thread(target=anywhere.enable, name="anywhere-check", daemon=True).start()  # it may take a few seconds: don't hold up the start
 
+    if panic is not None:
+        stops.append(panic.stop)
     running = Running(settings=settings, app=app, anywhere=anywhere, notes=notes, _stops=stops)
     accounts = app.state.accounts
     if accounts is not None:

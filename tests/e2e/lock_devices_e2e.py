@@ -59,7 +59,7 @@ def main() -> int:
         page = base.Page(DEBUG)
         page.call("Page.enable")
         page.call("Emulation.setDeviceMetricsOverride", width=412, height=860, deviceScaleFactor=2, mobile=False)
-        page.call("Page.addScriptToEvaluateOnNewDocument", source=f"if (!sessionStorage.getItem('seeded')) {{ sessionStorage.setItem('seeded','1'); localStorage.setItem('afp_token', {json.dumps(token)}); localStorage.setItem('afp_tour_done','1'); localStorage.setItem('afp_splash_off','1'); }}")
+        page.call("Page.addScriptToEvaluateOnNewDocument", source=f"if (!sessionStorage.getItem('seeded')) {{ sessionStorage.setItem('seeded','1'); localStorage.setItem('afp_token', {json.dumps(token)}); localStorage.setItem('afp_tour_done','1'); localStorage.setItem('afp_splash_off','1'); localStorage.setItem('afp_settings', JSON.stringify({{motion: 'off'}})); }}")
 
         def shot(name):
             (OUT / name).write_bytes(base64.b64decode(page.call("Page.captureScreenshot", format="png")["data"]))
@@ -75,7 +75,7 @@ def main() -> int:
             page.js(f"(() => {{ const e = document.querySelector({json.dumps(sel)}); e.value = {json.dumps(value)}; e.dispatchEvent(new Event('input', {{ bubbles: true }})); }})()")
 
         def open_settings_page(title):
-            tap("document.querySelector('#home .iconbtn[aria-label=Settings]').click()")
+            tap("document.querySelector('#tabbar .tab[data-tab=settings]').click()")
             tap(f"[...document.querySelectorAll('.set-menu .set')].find(b => b.textContent.includes({json.dumps(title)})).click()")
 
         page.call("Page.navigate", url=url + "/")

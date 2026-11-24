@@ -59,7 +59,11 @@ def test_every_notice_the_pc_can_send_has_a_page_message():
     from handoff.push import Notifier
 
     reasons = page_reasons()
+    informational = {"pc_plugged", "pc_unplugged"}  # they say what the charger did; they never explain a silence, so the popup has no words for them
     for kind in Notifier.PC_TEXT:
+        if kind in informational:
+            assert kind not in reasons, f"{kind} would be remembered as the reason for an outage"
+            continue
         assert kind in reasons, f"the PC can send {kind} but the popup has no words for it"
 
 

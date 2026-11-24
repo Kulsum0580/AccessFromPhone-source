@@ -73,23 +73,21 @@ def main() -> int:
         page.wait("!!document.getElementById('splash')", 10, "the opening")
         t0 = time.time()  # the clock starts when the opening is on screen, so a slow page load (a busy PC) doesn't skew the timings
         seen, glows = {}, {}
-        marks = [0.4, 1.6, 2.8, 3.5, 4.3]
-        shots = {0.4: "sp1.png", 1.6: "sp2.png", 2.8: "sp3.png", 3.5: "sp5-glow.png"}
+        marks = [0.1, 0.4]
+        shots = {0.4: "sp1.png"}
         for mark in marks:
             time.sleep(max(0, mark - (time.time() - t0)))
             seen[mark] = (opacity(), page.js("document.getElementById('splash') ? document.getElementById('splash').innerText : ''"))
             glows[mark] = page.js("(() => { const m = document.querySelector('.sp-mark'), w = document.querySelector('.sp-word span'); return m && w ? [getComputedStyle(m).filter, getComputedStyle(w).textShadow] : ['', '']; })()")
             if mark in shots:
                 shot(shots[mark])
-        check("the opening is on screen as the page opens", seen[0.4][0] == 1.0)
-        check("it names the app and says what it is for", "Your PC, from your pocket." in seen[2.8][1] and "Ask in plain words" in seen[2.8][1], seen[2.8][1])
-        check("it is still fully there four seconds in", seen[4.3][0] >= 0.99, seen[4.3])
-        check("there is no glow while it builds up", glows[0.4][0] in ("none", "") and glows[2.8][1] in ("none", "") , (glows[0.4], glows[2.8]))
-        check("in the last two seconds the mark glows", "drop-shadow" in glows[3.5][0], glows[3.5])
-        check("... and so does the name", glows[3.5][1] not in ("none", ""), glows[3.5])
+        check("the opening is on screen as the page opens", seen[0.1][0] == 1.0)
+        check("it names the app and says what it is for", "AccessFromPhone" in seen[0.4][1] and "Your PC, from your pocket." in seen[0.4][1], seen[0.4][1])
+        check("the introduction does not block interaction", page.js("!document.getElementById('splash') || getComputedStyle(document.getElementById('splash')).pointerEvents === 'none'"))
+        check("there are no distracting glow effects", glows[0.4][0] == "none" and glows[0.4][1] == "none", glows[0.4])
         page.wait("!document.getElementById('splash')", 5, "the opening to finish")
         total = time.time() - t0
-        check("it lasts about five seconds", 4.8 <= total <= 5.9, f"{total:.2f}s")
+        check("the introduction finishes within 1.5 seconds", total <= 1.5, f"{total:.2f}s")
         page.wait("!!document.querySelector('#home .hm-strip')", 10, "Home")
         check("it hands over to Home", page.js("document.getElementById('home').offsetParent !== null"))
         check("nothing is left behind it to block taps", page.js("!document.getElementById('splash')"))
@@ -107,17 +105,17 @@ def main() -> int:
         page.call("Emulation.setEmulatedMedia", features=[{"name": "prefers-reduced-motion", "value": "reduce"}])
         page.call("Page.navigate", url=url + "/")
         t1 = time.time()
-        page.wait("!!document.getElementById('splash')", 10, "the opening (reduced motion)")
-        page.wait("!document.getElementById('splash')", 6, "the short opening to finish")
+        page.wait("!!document.querySelector('#home .hm-strip')", 10, "Home with reduced motion")
+        page.wait("!document.getElementById('splash')", 2, "the introduction to be skipped")
         quick = time.time() - t1
-        check("with 'reduce motion' it is a brief fade, not the full animation", quick < 2.0, f"{quick:.2f}s")
+        check("with 'reduce motion' the introduction is skipped", quick < 2.0, f"{quick:.2f}s")
 
         # ---------------------------------------------------------------- the PC's window opens the same way
         page.call("Emulation.setEmulatedMedia", features=[{"name": "prefers-reduced-motion", "value": "no-preference"}])
         page.js("localStorage.removeItem('afp_splash_off'); true")
         page.call("Page.navigate", url=admin + "/")
         page.wait("!!document.getElementById('splash')", 10, "the opening on the PC window")
-        time.sleep(1.0)
+        time.sleep(0.1)
         check("the PC's window plays it too", opacity() == 1.0 and "Your PC, from your pocket." in page.js("document.getElementById('splash').innerText"))
         page.wait("!document.getElementById('splash')", 6, "it to finish")
         page.wait("!!document.querySelector('.shell .rail')", 15, "the dashboard")

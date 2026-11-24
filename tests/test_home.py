@@ -69,10 +69,10 @@ def test_the_page_has_a_home_screen_and_a_tab_bar():
     assert INDEX.index('id="home"') < INDEX.index('id="scroller"') < INDEX.index('id="dock"') < INDEX.index('id="tabbar"')  # tabs at the bottom, below the message box
 
 
-def test_the_four_tabs_and_what_they_do():
-    for word in ('["home", "Home", "home"]', '["chat", "Chat", "chat"]', '["files", "Files", "folder"]', '["pc", "PC", "gauge"]'):
+def test_the_five_tabs_and_what_they_do():
+    for word in ('["access", "Access", "monitor"]', '["home", "Home", "home"]', '["chat", "Chat", "chat"]', '["files", "Files", "folder"]', '["settings", "Settings", "sliders"]'):
         assert word in APP
-    assert 'if (key === "files") openFolder("")' in APP and "else if (key === \"pc\") openPcStatus()" in APP
+    assert 'if (key === "files") openFolder("")' in APP and "else if (key === \"settings\") openSettings()" in APP and '"PC", "gauge"' not in APP
 
 
 def test_home_never_shows_an_unlock_button_unless_the_helper_is_ready():
@@ -92,3 +92,7 @@ def test_home_and_the_tabs_are_styled_and_the_tab_bar_is_only_for_phones():
 def test_the_saved_chats_page_and_offline_mode_never_start_on_home():
     boot = APP[APP.index("async function bootSaved()"):APP.index("async function bootSaved()") + 200]
     assert 'setTab("chat")' in boot
+
+
+def test_the_phone_is_told_whether_the_screen_is_blacked_out(client):
+    assert client.get("/api/info").json()["screen_dark"] is False

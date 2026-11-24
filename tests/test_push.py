@@ -323,7 +323,7 @@ def phone_client(project, monkeypatch):
 def test_the_phone_learns_what_is_possible_and_subscribes(phone_client):
     c, app, sent, public = phone_client
     info = c.get("/api/push").json()
-    assert info == {"enabled": True, "web": public, "fcm": False, "subscribed": []}  # the page is given the public key only
+    assert info == {"enabled": True, "why": "", "web": public, "fcm": False, "subscribed": []}  # the page is given the public key only
     phone = Phone()
     body = {"kind": "web", "endpoint": ENDPOINT, "keys": phone.subscription, "expirationTime": None}
     assert c.post("/api/push/subscribe", json=body).json()["subscribed"] == ["web"]
@@ -355,7 +355,7 @@ def test_push_is_off_unless_it_is_set_up_and_says_so(project, monkeypatch):
     c = TestClient(app)
     token = c.post("/pair/claim", json={"code": app.state.accounts.new_pairing_code()[0], "name": "Phone"}).json()["token"]
     c.headers.update({"X-Token": token})
-    assert c.get("/api/push").json() == {"enabled": False, "web": None, "fcm": False, "subscribed": []}
+    assert c.get("/api/push").json() == {"enabled": False, "why": "push: enabled is off in the config.yaml this app loaded", "web": None, "fcm": False, "subscribed": []}
     assert c.post("/api/push/test").status_code == 404
     assert TestClient(app).get("/api/push").status_code == 401  # and only a paired phone may ask at all
 
@@ -377,3 +377,23 @@ def test_the_page_can_be_installed_with_real_icons(settings):
         assert c.get(icon["src"]).status_code == 200, icon["src"]
     assert 'href="/static/apple-touch-icon.png"' in c.get("/").text and c.get("/static/apple-touch-icon.png").status_code == 200
     assert c.get("/static/badge-96.png").status_code == 200
+
+
+def test_a_phone_that_switched_a_type_off_is_not_sent_it(tmp_path):
+    """The choice is applied where the notice is sent: nothing leaves the PC for a phone that asked not to hear about it."""
+    account, _ = firebase_account()
+    posts = []
+
+    def google(request):
+        if request.url.host == "oauth2.googleapis.com":
+            return httpx.Response(200, json={"access_token": "t", "expires_in": 3600})
+        posts.append(request)
+        return httpx.Response(200, json={"name": "projects/demo-project/messages/1"})
+
+    notifier, _, device = make_notifier(tmp_path, google, web=False, fcm=account)
+    notifier.subscribe_fcm(device.id, "f" * 50 + ":APA91bExampleToken_-" + "x" * 40)
+    notifier.set_prefs(device.id, {"types": {"done": False}})
+    report = notifier.send(Message("Job finished", "x", "ab12cd34", "done"))
+    assert report.sent == 0 and report.skipped == 1 and posts == []
+    assert notifier.send(Message("Plan ready", "x", "ab12cd34", "awaiting")).sent == 1  # the others still arrive
+    assert notifier.send(Message("Notifications are on", "x", "", "test")).sent == 1      # and a test always does

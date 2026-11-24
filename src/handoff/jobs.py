@@ -28,8 +28,9 @@ from .db import Database
 from .grants import GrantStore, protected_locations
 from . import browse as listing, imaging, power
 from .paths import is_inside
+from .pause import PauseSwitch
 from .planner import DemoPlanner, Plan, PlanError, Planner, Step, mentioned_paths
-from .policy import OutsideAllowed, PathDenied, PolicyEngine, PolicyError, ProtectedPath, ReadOnlyPath
+from .policy import OutsideAllowed, PathDenied, PolicyEngine, PolicyError, ProtectedPath, ReadOnlyPath, viewing
 from .snapshots import SnapshotStore
 from .tools import FileTools
 from .unlock import PinRequired, UnlockError
@@ -105,6 +106,7 @@ class Job:
     open: str = ""  # a file the phone should open in its viewer or editor
     open_mode: str = "edit"  # "view" or "edit"
     frozen: dict | None = None  # a request from before a restart: shown as it was saved, never run again
+    owner: str = ""  # the phone (device id) that asked: only that phone sees this request
 
     def to_dict(self) -> dict:
         if self.frozen is not None:
@@ -128,6 +130,7 @@ class Job:
             "changed": self.changed,
             "files": self.files,
             "conversation": self.conversation,
+            "owner": self.owner,
             "access": self.access,
             "open": self.open,
             "open_mode": self.open_mode,
@@ -312,10 +315,10 @@ class JobManager:
             protected_locations(settings),
         )
         self.db = Database(settings.storage.database)
+        self.pause_switch = PauseSwitch(settings.storage.database.parent / "paused.flag")  # "Pause phone access": on from any phone, off only on this PC
         self._grants = GrantStore(self.db, settings.storage.grants_file)
-        for folder, change in self._grants.load():  # what the user chose to keep allowing, if still safe and present
-            if self._policy.can_grant(folder, change=change) is None:
-                self._policy.grant(folder, None, change=change)
+        self.is_admin: Callable[[str], bool] = lambda device_id: False  # set by the server: is this phone the Admin phone (it sees and manages every phone's folders)
+        self._policy.restore([e for e in self._grants.load_entries() if self._policy.can_grant(e["path"], change=e["change"]) is None])  # what phones chose to keep allowing, if still safe and present
         self._snapshots = SnapshotStore(settings.storage.snapshots_dir)
         self._audit = AuditLog(self.db, settings.logging.audit_file)
         self._runner = CommandRunner(settings.commands, self._policy, self._audit)
@@ -350,7 +353,7 @@ class JobManager:
                           summary=d.get("summary", ""), outputs=list(d.get("outputs", [])), changed=list(d.get("changed", [])),
                           error=d.get("error"), activity=list(d.get("activity", [])), files=list(d.get("files", [])),
                           conversation=d.get("conversation", "default"), access=list(d.get("access", [])),
-                          open=d.get("open", ""), open_mode=d.get("open_mode", "edit"), frozen=d)
+                          open=d.get("open", ""), open_mode=d.get("open_mode", "edit"), frozen=d, owner=d.get("owner", ""))
             except (ValueError, KeyError, TypeError):
                 continue
             if status in (Status.PLANNING, Status.RUNNING):
@@ -387,12 +390,12 @@ class JobManager:
     # -- public API ---------------------------------------------------------
 
     @_saves
-    def submit(self, prompt: str, conversation: str | None = None, focus: str | None = None) -> Job:
+    def submit(self, prompt: str, conversation: str | None = None, focus: str | None = None, owner: str = "") -> Job:
         with self._lock:
-            job = Job(uuid.uuid4().hex[:8], prompt, self._now(), conversation=conversation or "default", focus=focus or "")
+            job = Job(uuid.uuid4().hex[:8], prompt, self._now(), conversation=conversation or "default", focus=focus or "", owner=owner)
             self._jobs[job.id] = job
             self._tokens[job.id] = CancelToken()
-            self._audit.record(job.id, "submitted", prompt=prompt, conversation=job.conversation)
+            self._audit.record(job.id, "submitted", prompt=prompt, conversation=job.conversation, device_id=owner)
         self._start_planning(job)
         return job
 
@@ -406,14 +409,20 @@ class JobManager:
         except Exception:  # noqa: BLE001
             pass
 
+    def _as_owner(self, job: Job, action, *args):
+        """Do this for the phone that asked: it sees its own folders (and those shared with it), not another phone's. A thread starts with no one asking, so it is said here."""
+        who = job.owner
+        with viewing(who if who else None, bool(who) and self.is_admin(who)):
+            return action(*args)
+
     def _start_planning(self, job: Job) -> None:
         self._worked_since[job.id] = self._now()
         if getattr(self._planner, "is_slow", False):
-            thread = threading.Thread(target=self._plan_job, args=(job,), daemon=True)
+            thread = threading.Thread(target=self._as_owner, args=(job, self._plan_job, job), daemon=True)
             self._threads.append(thread)
             thread.start()
         else:
-            self._plan_job(job)
+            self._as_owner(job, self._plan_job, job)
 
     @_saves
     def decide_access(self, job_id: str, decision: str) -> Job:
@@ -435,9 +444,9 @@ class JobManager:
             keep = decision == "always"
             for folder in folders:
                 if self._policy.can_grant(folder) is None:
-                    self._policy.grant(folder, None if keep else job.id)
+                    self._policy.grant(folder, None if keep else job.id, device=job.owner)   # the folder is the asking phone's
             if keep:
-                self._grants.save(self._policy.granted_details())
+                self._save_grants()
             self._audit.record(job.id, "access_granted", mode=decision, folders=", ".join(folders))
             # start over with the access in place: the plan, the typo fixes and the reading all work as normal
             job.access, job.summary, job.steps, job.outputs, job.error = [], "", [], [], None
@@ -446,18 +455,40 @@ class JobManager:
         self._start_planning(job)  # outside the lock: planning takes it again
         return job
 
-    def revoke_access(self, folder: str) -> list[str]:
-        """Take back access the user kept. Returns the folders that are still allowed."""
-        if self._policy.revoke(folder):
-            self._grants.save(self._policy.granted_details())
-            self._audit.record("-", "access_revoked", path=folder)
+    def _save_grants(self) -> None:
+        self._grants.save_entries(self._policy.entries())
+
+    def revoke_access(self, folder: str, owner: str | None = None) -> list[str]:
+        """Take back access that was kept. A phone takes back its own; the Admin phone (or the PC) takes it back from everyone, or from one phone when `owner` says which.
+        Returns the folders the asking phone can still use."""
+        if self._policy.revoke(folder, owner):
+            self._save_grants()
+            self._audit.record("-", "access_revoked", path=folder, **({"device_id": owner} if owner else {}))
         return [str(f) for f in self._policy.granted()]
 
     def granted_folders(self) -> list[str]:
         return [str(f) for f in self._policy.granted()]
 
     def granted_details(self) -> list[dict]:
-        return [{"path": str(f), "change": change} for f, change in self._policy.granted_details()]
+        """The folders the asking phone can use: its own, and those shared with it (the Admin phone sees all). Each says whether it is the phone's own."""
+        return [{"path": row["path"], "change": row["change"], "mine": row["mine"], "shared": row["shared"]} for row in self._policy.folders_for_phone()]
+
+    def folder_entries(self) -> list[dict]:
+        """Every kept folder with the phone it belongs to and who it is shared with, for the Admin phone and the PC page."""
+        return [{"path": str(e["path"]), "owner": e["device"], "change": e["change"], "shared": e["shared"]} for e in self._policy.entries()]
+
+    def share_folder(self, folder: str, owner: str, targets: dict[str, bool]) -> bool:
+        """The Admin chooses which other phones may use a phone's folder (and whether they may also change files there)."""
+        done = self._policy.share(folder, owner, targets)
+        if done:
+            self._save_grants()
+            self._audit.record("-", "folder_shared", path=str(folder), owner=owner, shared_with=",".join(sorted(targets)), device_id=owner)
+        return done
+
+    def forget_phone(self, device_id: str) -> None:
+        """A phone was removed: its folders go, and it is taken off every share list."""
+        self._policy.forget_device(device_id)
+        self._save_grants()
 
     def grant_folder(self, folder: str, change: bool) -> list[dict]:
         """The user, in the editor, allows reading (and with `change`, editing) a folder. Kept until removed."""
@@ -467,7 +498,7 @@ class JobManager:
         if reason:
             raise PathDenied(reason)
         self._policy.grant(folder, None, change=change)
-        self._grants.save(self._policy.granted_details())
+        self._save_grants()
         self._audit.record("-", "access_granted", mode="edit" if change else "read", folders=str(folder))
         return self.granted_details()
 
@@ -602,6 +633,20 @@ class JobManager:
                     can_change=self._policy.can_change(real / "x"))
         return data
 
+    def resolve_file(self, path: str) -> Path:
+        """A file this phone may read (the folder rules decide), for features that act on it, such as printing."""
+        real = self._policy.resolve(self._base / path)
+        if not real.is_file():
+            raise FileNotFoundError(f"{real} is not a file")
+        return real
+
+    def resolve_folder(self, path: str) -> Path:
+        """A folder this phone may read (the folder rules decide), for features that watch it."""
+        real = self._policy.resolve(self._base / path)
+        if not real.is_dir():
+            raise FileNotFoundError(f"{real} is not a folder")
+        return real
+
     def stream_link(self, path: str) -> dict:
         """A short-lived link to play one video or audio file from the PC. The player can't send this phone's token, so the link
         itself is the key: unguessable, for that one file, and gone after a while."""
@@ -644,8 +689,67 @@ class JobManager:
             self._offered.add(real)
         return {"path": str(real), "name": real.name, "size": real.stat().st_size}
 
+    def offer_folder(self, path: str) -> dict:
+        """The person picked a folder to download (long-press on the PC's screen): pack it into one zip, and offer that zip like any file."""
+        real = self._policy.resolve(self._base / path)
+        if not real.is_dir():
+            raise FileNotFoundError(f"{real} is not a folder")
+        limit = self._settings.agent.max_download_mb
+        root = Path(tempfile.gettempdir()) / "afp_zips"
+        cutoff = time.time() - 86400
+        if root.is_dir():  # zips made for earlier picks are not kept for ever
+            for old in root.glob("screen-*"):
+                try:
+                    if old.stat().st_mtime < cutoff:
+                        for f in old.glob("*"):
+                            f.unlink(missing_ok=True)
+                        old.rmdir()
+                except OSError:
+                    pass
+        job_id = "screen-" + uuid.uuid4().hex[:10]
+        try:
+            zipped = self._zip_folder(real, job_id, None, limit * 1024 * 1024 if limit else 0)
+            self._check_size(zipped)
+        except Exception:
+            made = root / job_id
+            if made.is_dir():
+                for f in made.glob("*"):
+                    f.unlink(missing_ok=True)
+                made.rmdir()
+            raise
+        with self._lock:
+            self._offered.add(zipped.resolve())
+        self._audit.record("-", "send_file", path=real)
+        return {"path": str(zipped.resolve()), "name": zipped.name, "size": zipped.stat().st_size}
+
+    def item_info(self, path: str | Path) -> dict:
+        """What a phone may be told about a file or folder it long-pressed on the PC's screen: its name and size, and whether it may be downloaded now
+        (or which folder would have to be allowed first). Nothing about a protected place beyond that it cannot be opened."""
+        real = Path(path)
+        info = {"path": str(real), "name": real.name or str(real), "folder": real.is_dir(), "size": 0, "allowed": False, "needs_access": "", "reason": ""}
+        try:
+            real = self._policy.resolve(real)
+        except OutsideAllowed as exc:
+            info["needs_access"] = str(exc.path if exc.path.is_dir() else exc.path.parent)
+            info["reason"] = "This folder isn't allowed yet."
+            return info
+        except PathDenied as exc:
+            info["reason"] = str(exc)
+            return info
+        try:
+            if real.is_file():
+                info["size"] = real.stat().st_size
+                limit = self._settings.agent.max_download_mb
+                if limit and info["size"] > limit * 1024 * 1024:
+                    info["reason"] = f"{real.name} is larger than the {limit} MB download limit."
+                    return info
+            info["allowed"] = True
+        except OSError:
+            info["reason"] = "Windows doesn't let this app open that."
+        return info
+
     @_saves
-    def save_image(self, path: str, data: bytes, base_sha: str | None, conversation: str | None = None, unique: bool = False, note: str = "") -> dict:
+    def save_image(self, path: str, data: bytes, base_sha: str | None, conversation: str | None = None, unique: bool = False, note: str = "", owner: str = "") -> dict:
         """Save a picture the user edited on the phone. Their tap on Save is the approval; it is snapshotted, so it can be undone.
         `unique`: it is a new copy, so a name already taken gets (2), (3)... and nothing is replaced."""
         real = self._policy.resolve(self._base / path, for_write=True)  # ReadOnlyPath / OutsideAllowed when not allowed
@@ -660,7 +764,7 @@ class JobManager:
             return {"saved": False, "path": str(real), "name": real.name, "sha": digest, "width": width, "height": height, "job": None}
         note = " ".join(note.split())[:120]
         with self._lock:
-            job = Job(uuid.uuid4().hex[:8], f"Edited picture {real.name} by hand", self._now(), conversation=conversation or "default", status=Status.DONE)
+            job = Job(uuid.uuid4().hex[:8], f"Edited picture {real.name} by hand", self._now(), conversation=conversation or "default", status=Status.DONE, owner=owner)
             job.summary = f"Saved your edits to {real.name}"
             job.steps = [Step(Action.WRITE, str(real))]
             job.outputs = [f"Saved {real.name}: {width}×{height}" + (f" ({note})." if note else ".")]
@@ -674,7 +778,7 @@ class JobManager:
         return {"saved": True, "path": str(real), "name": real.name, "sha": digest, "width": width, "height": height, "job": job.to_dict()}
 
     @_saves
-    def save_file(self, path: str, text: str, base_sha: str | None, conversation: str | None = None) -> dict:
+    def save_file(self, path: str, text: str, base_sha: str | None, conversation: str | None = None, owner: str = "") -> dict:
         """Save the user's own edits. Their tap on Save is the approval; the change is snapshotted, so it can be undone."""
         real = self._policy.resolve(self._base / path, for_write=True)  # ReadOnlyPath / OutsideAllowed when not allowed
         current = real.read_bytes() if real.exists() else b""
@@ -693,7 +797,7 @@ class JobManager:
             added += line.startswith("+ ")
             removed += line.startswith("- ")
         with self._lock:
-            job = Job(uuid.uuid4().hex[:8], f"Edited {real.name} by hand", self._now(), conversation=conversation or "default", status=Status.DONE)
+            job = Job(uuid.uuid4().hex[:8], f"Edited {real.name} by hand", self._now(), conversation=conversation or "default", status=Status.DONE, owner=owner)
             job.summary = f"Saved your edits to {real.name}"
             job.steps = [Step(Action.WRITE, str(real))]
             job.outputs = [f"Saved. {added} line{'s' if added != 1 else ''} added, {removed} removed."]
@@ -728,11 +832,11 @@ class JobManager:
             self._worked_since[job.id] = self._now()
             if any(s.action is Action.RUN for s in job.steps):
                 job.status = Status.RUNNING  # a command can take a while: do not hold the lock
-                thread = threading.Thread(target=self._run, args=(job, True), daemon=True)
+                thread = threading.Thread(target=self._as_owner, args=(job, self._run, job, True), daemon=True)
                 self._threads.append(thread)
                 thread.start()
                 return job
-            self._run(job, approved=True)
+            self._as_owner(job, self._run, job, True)
             return job
 
     @_saves
@@ -800,11 +904,12 @@ class JobManager:
         self._audit.record("-", "download", path=real)
         return real
 
-    def _zip_folder(self, folder: Path, job_id: str, token: CancelToken | None = None) -> Path:
+    def _zip_folder(self, folder: Path, job_id: str, token: CancelToken | None = None, budget: int = 0) -> Path:
         """Pack a folder into one zip in a temporary place, skipping protected files and links. It is written as it goes, so size is no problem."""
         out_dir = Path(tempfile.gettempdir()) / "afp_zips" / job_id
         out_dir.mkdir(parents=True, exist_ok=True)
         target = out_dir / f"{folder.name or 'folder'}.zip"
+        total = 0
         with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED, allowZip64=True) as zf:
             for root, dirs, names in os.walk(folder):
                 dirs[:] = [d for d in dirs if not os.path.islink(os.path.join(root, d)) and not self._policy.is_protected(Path(root, d))]
@@ -816,6 +921,13 @@ class JobManager:
                         continue
                     if token is not None:
                         token.check()
+                    if budget:  # a phone asked for this folder: stop packing as soon as it is clearly too big, not after minutes of work
+                        try:
+                            total += full.stat().st_size
+                        except OSError:
+                            continue
+                        if total > budget:
+                            raise FileTooBig(f"{folder.name} is larger than the {budget // (1024 * 1024)} MB download limit")
                     try:
                         zf.write(full, os.path.relpath(full, folder.parent))
                     except OSError:  # locked or vanished: leave it out rather than fail the whole folder
@@ -966,7 +1078,11 @@ class JobManager:
         if not info.get("enabled"):
             raise PlanError("Unlocking from the phone is switched off on this PC.")
         if info.get("attention"):
-            raise PlanError("Unlocking has stopped itself because the last tries didn't work. Check the saved sign-in is still right, then open this PC's own page (the one with the connect code) and tap Start trying again under Unlock.")
+            wait = info.get("auto_resume_in") or 0
+            if wait:
+                minutes = max(1, round(wait / 60))
+                raise PlanError(f"Unlocking paused because the last tries didn't work. It will try again by itself in about {minutes} minute{'s' if minutes != 1 else ''}, so ask again then. To try sooner, check the saved sign-in is still right, then open this PC's own page (the one with the connect code) and tap Start trying again under Unlock.")
+            raise PlanError("Unlocking has stopped itself because the last tries didn't work, even after trying again by itself. Check the saved sign-in is still right, then open this PC's own page (the one with the connect code) and tap Start trying again under Unlock.")
         if info.get("locked_for"):
             raise PlanError(f"Too many wrong unlock PINs. It is paused for about {max(1, round(info['locked_for'] / 60))} more minute(s).")
         if info.get("locked") is False:
@@ -1001,7 +1117,7 @@ class JobManager:
             if kind == "unlock":  # allowed by the helper being installed (that took an administrator and a PIN), not by power.remote_actions
                 self._check_unlock()
                 return
-            if kind not in self._settings.power.remote_actions:
+            if kind not in self._settings.power.remote_actions and not (kind == "screen_on" and "screen_off" in self._settings.power.remote_actions):
                 raise PlanError(f"{power.ACTIONS[kind].summary} from the phone is switched off. To allow it, add \"{kind}\" to power.remote_actions in config.yaml on the PC.")
             return
         if step.action is Action.RUN:

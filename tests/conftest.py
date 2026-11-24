@@ -68,6 +68,12 @@ def ro_settings(ro_project):
 
 
 @pytest.fixture(autouse=True)
+def _daily_files_stay_in_the_test_folder(monkeypatch, tmp_path):
+    """The everyday helpers keep their files in the user's Documents by default: a test must never write there."""
+    monkeypatch.setenv("HANDOFF_DAILY__FOLDER", str(tmp_path / "daily-files"))
+
+
+@pytest.fixture(autouse=True)
 def _shared_token_unless_a_test_asks_for_accounts(monkeypatch):
     """Most tests are about files and jobs and use the one shared token; the account tests turn real accounts on."""
     monkeypatch.setenv("HANDOFF_ACCOUNTS__ENABLED", "false")

@@ -108,10 +108,11 @@ class Device:
     last_seen: str
     last_ip: str
     blocked: bool = False
+    signed_out: bool = False
 
     def public(self) -> dict:
         return {"id": self.id, "name": self.name, "created": self.created, "last_seen": self.last_seen,
-                "last_ip": self.last_ip, "blocked": self.blocked}
+                "last_ip": self.last_ip, "blocked": self.blocked, "signed_out": self.signed_out}
 
 
 def resolve_mode(mode: str) -> str:
@@ -129,6 +130,8 @@ class AccountStore:
         self.mode = resolve_mode(mode)
         self._forget_after_days = forget_after_days
         self.windows_throttle = Throttle(3, 300)  # a domain can lock the real Windows account after a few wrong tries: stay well under
+        self.on_signed_out = None  # called with the Device when a phone signs itself out (its entry stays)
+        self.on_removed = None  # set by whoever wants to know when a phone is removed: called with the Device
         self._db, from_path = open_database(source)
         self._pairing_seconds = pairing_minutes * 60
         self._max_devices = max_devices
@@ -279,11 +282,13 @@ class AccountStore:
             self._codes[normalize_code(code)] = now + self._pairing_seconds
             return code, self._pairing_seconds
 
-    def pair(self, code: str, device_name: str, ip: str = "", previous: str = "") -> tuple[Device, str]:
+    def pair(self, code: str, device_name: str, ip: str = "", previous: str = "", install: str = "") -> tuple[Device, str]:
         """Trade a one-time code for this phone's own token. The code works once.
 
         A phone that pairs again and still holds its old token (`previous`) takes over its own entry instead of adding
-        another, so it keeps its name, its notifications and its place in the list. A phone that lost its token is new."""
+        another, so it keeps its name, its notifications and its place in the list. A phone that signed out (so its token is
+        gone) is still recognised by `install`, an id its app keeps for itself: it gets its own entry back, not a new one.
+        Another phone has another install id, so it is always a new entry."""
         with self._lock:
             self.pair_throttle.check(ip)
             key, now = normalize_code(code), time.monotonic()
@@ -297,19 +302,22 @@ class AccountStore:
             again = self._row_for_token(previous)
             if again is not None and again["blocked"]:
                 again = None  # a blocked phone is not let back in by pairing: it is a new entry the owner can see
+            ihash = _token_hash("install:" + install) if install else ""
+            if again is None and ihash:
+                again = self._db.one("SELECT * FROM devices WHERE install_hash=? AND blocked=0", (ihash,))
             if again is None and self._db.one("SELECT COUNT(*) AS n FROM devices")["n"] >= self._max_devices:
                 self._codes[key] = expiry  # not the code's fault; keep it usable
                 raise DeviceLimit(f"Device limit reached. This PC already has {self._max_devices} devices connected. Remove one in the PC's window (Phones), then try again.")
             self.pair_throttle.clear(ip)
             token = secrets.token_urlsafe(24)
             if again is not None:
-                self._db.run("UPDATE devices SET token_hash=?, last_seen=?, last_ip=? WHERE id=?",
-                             (_token_hash(token), _now(), ip, again["id"]))
+                self._db.run("UPDATE devices SET token_hash=?, last_seen=?, last_ip=?, install_hash=CASE WHEN ?<>'' THEN ? ELSE install_hash END WHERE id=?",
+                             (_token_hash(token), _now(), ip, ihash, ihash, again["id"]))
                 return self.get(again["id"]), token
             device = Device(id=secrets.token_hex(4), name=self._unique_name(device_name), created=_now(), last_seen=_now(), last_ip=ip)
             self._db.run(
-                "INSERT INTO devices (id, name, token_hash, created, last_seen, last_ip, blocked) VALUES (?, ?, ?, ?, ?, ?, 0)",
-                (device.id, device.name, _token_hash(token), device.created, device.last_seen, device.last_ip))
+                "INSERT INTO devices (id, name, token_hash, created, last_seen, last_ip, blocked, install_hash) VALUES (?, ?, ?, ?, ?, ?, 0, ?)",
+                (device.id, device.name, _token_hash(token), device.created, device.last_seen, device.last_ip, ihash))
             return device, token
 
     def _row_for_token(self, token: str):
@@ -354,7 +362,7 @@ class AccountStore:
     @staticmethod
     def _device(row) -> Device:
         return Device(id=row["id"], name=row["name"], created=row["created"], last_seen=row["last_seen"],
-                      last_ip=row["last_ip"], blocked=bool(row["blocked"]))
+                      last_ip=row["last_ip"], blocked=bool(row["blocked"]), signed_out=row["token_hash"].startswith("out:"))
 
     def devices(self) -> list[dict]:
         self.forget_stale()
@@ -384,6 +392,19 @@ class AccountStore:
             gone = self._need(device_id)
             self._db.run("DELETE FROM devices WHERE id=?", (device_id,))
             self._db.run("DELETE FROM push_subs WHERE device_id=?", (device_id,))  # a removed phone is never notified
+            if self.on_removed is not None:
+                self.on_removed(gone)  # whoever tracks this phone (its access level, its session) lets go of it too
+            return gone
+
+    def sign_out(self, device_id: str) -> Device:
+        """A phone signs itself out: its token stops working for good, but its entry stays, so the same phone
+        connecting again is the same person, with the same name and level, not a new one."""
+        with self._lock:
+            gone = self._need(device_id)
+            self._db.run("UPDATE devices SET token_hash=? WHERE id=?", ("out:" + secrets.token_hex(16), device_id))
+            self._db.run("DELETE FROM push_subs WHERE device_id=?", (device_id,))
+            if self.on_signed_out is not None:
+                self.on_signed_out(gone)
             return gone
 
     def _need(self, device_id: str) -> Device:
