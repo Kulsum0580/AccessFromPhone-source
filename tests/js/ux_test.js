@@ -5,6 +5,97 @@ const U = require("../../src/handoff/web/ux.js");
 const run = [];
 function test(name, fn) { try { fn(); run.push([name, true]); } catch (e) { run.push([name, false, e]); } }
 
+function feedbackRig() {
+  const events = {}, queued = [], buzzes = [];
+  let time = 0, enabled = true, feedback;
+  const emit = (kind) => { if (enabled && feedback.allow(kind)) buzzes.push(kind); };
+  feedback = U.actionHaptics({ addEventListener: (type, handler) => { events[type] = handler; } }, emit,
+    { now: () => time, defer: (handler) => queued.push(handler) });
+  const control = (...matches) => ({
+    files: [{}],
+    matches: (selector) => selector.split(/,\s*/).some((part) => matches.includes(part)),
+    closest(selector) { return this.matches(selector) ? this : null; },
+    getAttribute: () => null,
+  });
+  return { buzzes, emit, control,
+    fire(type, target, trusted = true) { events[type]({ type, target, isTrusted: trusted }); },
+    next(ms = 0) { queued.splice(0).forEach((handler) => handler()); time += ms; },
+    enable(value) { enabled = value; },
+  };
+}
+
+test("actions use distinct tap, selection, primary and destructive feedback", () => {
+  const rig = feedbackRig();
+  for (const [selectors, expected] of [
+    [["button"], "light"], [["a[href]"], "light"], [["button", "nav"], "tick"],
+    [['[role="tab"]'], "tick"], [["button", "[aria-pressed]"], "tick"],
+    [["button", "[aria-checked]"], "tick"], [["button", ".primary"], "medium"],
+    [["button", ".danger", ".primary"], "heavy"], [["button", ".swp-act"], "heavy"],
+  ]) {
+    rig.fire("click", rig.control(...selectors));
+    assert.strictEqual(rig.buzzes.pop(), expected);
+    rig.next();
+  }
+});
+
+test("one activation buzzes once, without swallowing success, warning or error feedback", () => {
+  const rig = feedbackRig();
+  const button = rig.control("button");
+  rig.fire("click", button);
+  ["light", "tick", "medium", "heavy", "success", "warning", "error", "alert"].forEach(rig.emit);
+  assert.deepStrictEqual(rig.buzzes, ["light", "success", "warning", "error", "alert"]);
+  rig.next();
+  rig.fire("click", button);
+  assert.strictEqual(rig.buzzes.at(-1), "light");
+  assert.strictEqual(rig.buzzes.length, 6);
+});
+
+test("sliders are throttled and a checkbox change does not duplicate its click", () => {
+  const rig = feedbackRig();
+  const range = rig.control("input", 'input[type="range"]');
+  rig.fire("input", range); rig.next(20);
+  rig.fire("input", range); rig.emit("tick"); rig.next(90);
+  rig.fire("input", range); rig.next(10);
+  rig.fire("change", range);
+  assert.deepStrictEqual(rig.buzzes, ["tick", "tick"]);
+  rig.next();
+  const check = rig.control("input", 'input[type="checkbox"]');
+  rig.fire("click", check); rig.fire("change", check); rig.emit("tick");
+  assert.deepStrictEqual(rig.buzzes, ["tick", "tick", "tick"]);
+});
+
+test("disabled controls, typing and programmatic clicks are silent", () => {
+  const rig = feedbackRig();
+  for (const selectors of [["button", ":disabled"], ["button", '[aria-disabled="true"]'], ["button", "[inert]"], ["input", 'input[type="text"]']]) {
+    const target = rig.control(...selectors);
+    for (const type of ["click", "input", "change"]) rig.fire(type, target);
+  }
+  rig.fire("click", rig.control("button"), false);
+  assert.deepStrictEqual(rig.buzzes, []);
+});
+
+test("file selection, native option changes and explicit overrides have feedback", () => {
+  const rig = feedbackRig();
+  for (const selectors of [["select"], ["input", 'input[type="file"]'], ["input", 'input[type="date"]']]) {
+    rig.fire("change", rig.control(...selectors)); rig.next();
+  }
+  const button = rig.control("button");
+  button.getAttribute = () => "heavy";
+  rig.fire("click", button); rig.next();
+  button.getAttribute = () => "none";
+  rig.fire("click", button); rig.emit("light");
+  assert.deepStrictEqual(rig.buzzes, ["tick", "tick", "tick", "heavy"]);
+});
+
+test("haptics off remains silent and enabling it allows the first feedback", () => {
+  const rig = feedbackRig();
+  rig.enable(false);
+  rig.fire("click", rig.control("button")); rig.emit("success");
+  assert.deepStrictEqual(rig.buzzes, []);
+  rig.enable(true); rig.emit("medium");
+  assert.deepStrictEqual(rig.buzzes, ["medium"]);
+});
+
 test("a rubber band never goes backwards or past its limit", () => {
   assert.strictEqual(U.resist(-5, 100), 0);
   assert.strictEqual(U.resist(0, 100), 0);

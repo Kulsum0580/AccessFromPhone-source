@@ -30,6 +30,9 @@
   body { background: var(--bg); color: var(--text); font: 15px/1.55 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
   h1, h2, h3, p { margin: 0; }
   button, input { font: inherit; color: inherit; }
+  .usage-controls .field { display: grid; gap: 8px; margin: 16px 0; }
+  .usage-controls textarea { width: min(100%, 560px); min-height: 100px; padding: 10px 12px; resize: vertical; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--panel-solid); color: var(--text); font: inherit; }
+  .usage-controls textarea:focus-visible { outline: 2px solid var(--a1); outline-offset: 2px; }
   [hidden] { display: none !important; }
 
   /* ---------- the living background ---------- */
@@ -697,10 +700,10 @@ html[data-motion="off"] .sp-word span, html[data-motion="off"] .sp-tag, html[dat
       button: "Reset password", onSubmit: async (v) => { const r = await call("/admin/reset", "POST", v); recoveryView(r.recovery_code); },
       below: el("p", { class: "aside" }, el("button", { class: "linkbtn", type: "button", onclick: loginView }, "Back to sign in")) });
     split(heroH1(), heroLead, a.card); a.focus();
-  }
+    }
 
     /* ---------- dashboard: a menu on the left, one section at a time ---------- */
-  const VIEWS = [["overview", "Overview", "home"], ["phones", "Phones", "phone"], ["unlock", "Unlock", "lock"], ["connection", "Connection", "globe"], ["activity", "Activity", "activity"], ["settings", "Settings", "gear"]];
+  const VIEWS = [["overview", "Overview", "home"], ["phones", "Phones", "phone"], ["unlock", "Unlock", "lock"], ["connection", "Connection", "globe"], ["activity", "Activity", "activity"], ["usage", "Usage tracking", "activity"], ["settings", "Settings", "gear"]];
   const greeting = () => { const h = new Date().getHours(); return h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; };
   const fmtBytes = (b) => b >= 1024 ** 4 ? (b / 1024 ** 4).toFixed(1) + " TB" : b >= 1024 ** 3 ? (b / 1024 ** 3).toFixed(b >= 1024 ** 3 * 100 ? 0 : 1) + " GB" : Math.round(b / 1024 ** 2) + " MB";
   const toneOf = (pct, warnAt, badAt) => pct >= badAt ? "bad" : pct >= warnAt ? "warn" : "ok";
@@ -716,17 +719,19 @@ html[data-motion="off"] .sp-word span, html[data-motion="off"] .sp-tag, html[dat
     ui.screenBox = el("section", { class: "card dcard" });
     ui.unlockBox = el("section", { class: "card conn" });
     ui.connBox = el("section", { class: "card conn" });
+    ui.usageBox = el("section", { class: "usage-controls" });
+    ui.usageIndicator = el("button", { class: "btn sm", onclick: () => setView("usage"), "aria-live": "polite" }, "Usage tracking off");
     ui.online = el("span", { class: "chip" }, el("i", { class: "dot" }), el("span", {}, state.pc + " · Online"));
     ui.nav = VIEWS.map(([key, label, icon]) => el("button", { class: "rnav", type: "button", "data-view": key, onclick: () => setView(key) }, ico(icon), el("span", {}, label)));
-    const rail = el("aside", { class: "rail" }, brand(), el("nav", { class: "rnavs", "aria-label": "Sections" }, ui.nav),
+    const rail = el("aside", { class: "rail" }, brand(), el("nav", { class: "rnavs", "aria-label": "Sections" }, ui.nav), ui.usageIndicator,
       el("div", { class: "who" }, el("span", { class: "avatar" }, (state.owner || "?").slice(0, 1).toUpperCase()), el("div", { class: "grow" }, el("b", {}, state.owner || "Owner"), el("small", {}, "Owner · signed in")),
         el("button", { class: "btn sm ghost", title: "Sign out", "aria-label": "Sign out", onclick: async () => { await call("/admin/logout", "POST"); load(); } }, ico("out"))));
     ui.main = el("main", { class: "dmain" });
     show(el("div", { class: "shell" }, rail, ui.main));
     via = "lan"; sessionStorage.setItem("afp_via", via);
     setView(ui.view);
-    pairing(); devices(); loadConnection(); loadUnlock(); loadStatus(); loadActivity(); loadPause(); loadAccess(); loadScreen();
-    pollTimer = setInterval(() => { devices(); loadStatus(); loadActivity(); loadUnlock(); loadPause(); loadAccess(); }, 4000);
+    pairing(); devices(); loadConnection(); loadUnlock(); loadStatus(); loadActivity(); loadPause(); loadAccess(); loadScreen(); loadUsage();
+    pollTimer = setInterval(() => { devices(); loadStatus(); loadActivity(); loadUnlock(); loadPause(); loadAccess(); loadUsage(); }, 4000);
     screenTimer = setInterval(loadScreen, 1500);  // a phone asking to see the screen is answered here as quickly as it can be
   }
 
@@ -737,6 +742,60 @@ html[data-motion="off"] .sp-word span, html[data-motion="off"] .sp-tag, html[dat
     ui.main.classList.remove("enter");
     requestAnimationFrame(() => ui.main.classList.add("enter"));
     window.scrollTo(0, 0);
+  }
+
+  async function loadUsage() {
+    try {
+      const usage = await call("/admin/usage");
+      const signature = JSON.stringify([usage.supported, usage.enabled, usage.paused, usage.suspended, usage.excluded, usage.error]);
+      ui.usage = usage;
+      ui.usageIndicator.textContent = !usage.enabled ? "Usage tracking off" : usage.suspended ? "Usage paused by PC Pause" : usage.paused ? "Usage recording paused" : !usage.supported ? "Usage tracking unavailable" : "Usage recording on";
+      ui.usageIndicator.classList.toggle("primary", usage.recording);
+      if (signature !== ui.usageSignature) { ui.usageSignature = signature; paintUsage(); }
+    } catch (error) {
+      if (error.status === 401) { clearTimers(); load(); }
+      else if (!ui.usage) ui.usageBox.replaceChildren(el("p", { class: "meta" }, "Usage tracking is unavailable."));
+    }
+  }
+
+  function paintUsage() {
+    const usage = ui.usage;
+    if (!usage) return;
+    const enabled = el("input", { type: "checkbox", "aria-label": "Record application usage" });
+    enabled.checked = usage.enabled; enabled.disabled = !usage.supported;
+    const paused = el("input", { type: "checkbox", "aria-label": "Pause usage recording" });
+    paused.checked = usage.paused; paused.disabled = !usage.enabled;
+    const excluded = el("textarea", { rows: "4", "aria-label": "Excluded applications", placeholder: "private-app.exe" });
+    excluded.value = usage.excluded.join("\n");
+    const save = async () => {
+      try {
+        await call("/admin/usage", "POST", { enabled: enabled.checked, paused: paused.checked, excluded: excluded.value.split(/[\n,]/).map(name => name.trim()).filter(Boolean) });
+        ui.usageSignature = null; await loadUsage();
+      } catch (error) { toast("Could not update usage tracking", error.message, "warn"); paintUsage(); }
+    };
+    enabled.onchange = async () => {
+      if (enabled.checked && !window.confirm("Record this Windows session's application names, active/idle periods, and app-open/close observations? Only paired Admin phones may view the history. It is stored on this PC for seven days. No keystrokes, document contents, window titles or screenshots are collected.")) { enabled.checked = false; return; }
+      paused.checked = false; await save();
+    };
+    paused.onchange = save;
+    const erase = el("button", { class: "btn sm", onclick: async () => {
+      if (!window.confirm("Permanently delete all recorded usage history? Recording will also be paused.")) return;
+      try {
+        await call("/admin/usage", "POST", { enabled: usage.enabled, paused: true, excluded: usage.excluded });
+        await call("/admin/usage", "DELETE");
+        await loadUsage(); toast("Usage history deleted", "", "");
+      } catch (error) { toast("Could not delete history", error.message, "warn"); }
+    } }, ico("trash"), "Delete history");
+    ui.usageBox.replaceChildren(
+      el("h2", {}, "Application usage"),
+      el("p", { class: "meta" }, "Local metadata only: application names and usage times. No typed text, document contents, titles or screenshots. Admin phones can read the history. Records expire after seven days."),
+      el("label", { class: "kv" }, "Record application usage", enabled),
+      el("label", { class: "kv" }, "Pause recording", paused),
+      el("p", { class: "meta" }, "Idle begins after 60 seconds without keyboard or mouse input. Samples are taken about every five seconds; sleep and collection gaps are not counted as work."),
+      el("label", { class: "field" }, el("span", {}, "Excluded applications (one executable name per line)"), excluded),
+      el("div", { class: "foot-actions" }, el("button", { class: "btn sm", onclick: save }, ico("check"), "Save exclusions"), erase),
+      el("p", { class: "meta", role: "status" }, !usage.supported ? "Activity tracking requires Windows." : usage.error || "Seven-day history stays in this PC's app database.")
+    );
   }
 
   async function loadStatus() {
@@ -921,6 +980,8 @@ html[data-motion="off"] .sp-word span, html[data-motion="off"] .sp-tag, html[dat
     } else if (v === "connection") {
       parts.push(dhead("Connection", "How your phones reach this PC."));
       parts.push(ui.connBox);
+    } else if (v === "usage") {
+      parts.push(dhead("Usage tracking", "Owner-controlled application activity."), ui.usageBox);
     } else if (v === "activity") {
       parts.push(dhead("Activity", "The latest things that happened on this PC."));
       parts.push(el("section", { class: "card dcard" }, ...(ui.activity.length ? ui.activity.map(actRow) : [el("p", { class: "meta" }, "Nothing has happened yet.")])));

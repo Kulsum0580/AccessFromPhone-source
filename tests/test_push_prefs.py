@@ -72,3 +72,95 @@ def test_the_page_sends_and_loads_the_choice(tmp_path):
     from pathlib import Path
     app = (Path(__file__).resolve().parents[1] / "src" / "handoff" / "web" / "app.js").read_text(encoding="utf-8")
     assert '"/push/prefs"' in app and "quiet" in app
+
+
+def test_native_push_refresh_is_silent_but_manual_enable_confirms():
+        from pathlib import Path
+        import shutil
+        import subprocess
+
+        import pytest
+
+        node = shutil.which("node")
+        if node is None:
+                pytest.skip("Node.js is needed to exercise the phone notification handler")
+        script = r"""
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const source = fs.readFileSync('src/handoff/web/app.js', 'utf8');
+const start = source.indexOf('  const Push = {');
+const end = source.indexOf('  /** Open the request a notification was about. */', start);
+assert.ok(start >= 0 && end > start);
+const listeners = {}, toasts = [], haptics = [], sent = [];
+const saved = new Map([['afp_push', '1']]);
+let nativeRequests = 0, failSubscribe = false;
+const context = vm.createContext({
+    window: {
+        AfpApp: { enablePush() { nativeRequests++; } },
+        addEventListener(name, callback) { listeners[name] = callback; }
+    },
+    navigator: {}, S: { token: 'paired-phone' },
+    store: { raw: key => saved.get(key), setRaw: (key, value) => saved.set(key, value), del: key => saved.delete(key) },
+    api: async (path, options) => {
+        if (path === '/push') return { json: async () => ({ enabled: true, fcm: true, subscribed: ['fcm'] }) };
+        if (path === '/push/subscribe') {
+            if (failSubscribe) throw new Error('PC unavailable');
+            sent.push(JSON.parse(options.body));
+            return { json: async () => ({ subscribed: ['fcm'] }) };
+        }
+        throw new Error('Unexpected route: ' + path);
+    },
+    toast: message => toasts.push(message), haptic: kind => haptics.push(kind), refreshNotifyRow() {}
+});
+vm.runInContext(source.slice(start, end), context);
+const push = vm.runInContext('Push', context);
+const answer = detail => listeners['afp-push']({ detail });
+(async () => {
+    for (let launch = 0; launch < 3; launch++) {
+        await push.refreshQuietly();
+        await answer({ token: 'refreshed-' + launch });
+    }
+    assert.equal(nativeRequests, 3);
+    assert.equal(sent.length, 3);
+    assert.deepEqual(toasts, []);
+    assert.deepEqual(haptics, []);
+    await answer({ token: 'rotated-by-firebase' });
+    assert.equal(sent.length, 4);
+    assert.deepEqual(toasts, []);
+
+    await push.enable();
+    assert.deepEqual(toasts, []);
+    await answer({ token: 'manually-enabled' });
+    assert.deepEqual(toasts, ['Notifications are on']);
+    assert.deepEqual(haptics, ['success']);
+    await answer({ token: 'another-refresh' });
+    assert.equal(toasts.length, 1);
+
+    await push.enable();
+    await answer({ error: 'Permission denied' });
+    assert.equal(toasts.pop(), 'Permission denied');
+    await push.refreshQuietly();
+    await answer({ error: 'Temporary refresh failure' });
+    assert.equal(toasts.length, 1);
+
+    failSubscribe = true;
+    await push.refreshQuietly();
+    await answer({ token: 'silent-failure' });
+    assert.equal(toasts.length, 1);
+    await push.enable();
+    await answer({ token: 'manual-failure' });
+    assert.equal(toasts.pop(), "Couldn't turn notifications on: PC unavailable");
+    assert.equal(push.nativeEnablePending, false);
+
+    saved.delete('afp_push');
+    const before = nativeRequests;
+    await push.refreshQuietly();
+    assert.equal(nativeRequests, before);
+})().catch(error => { console.error(error); process.exitCode = 1; });
+"""
+        result = subprocess.run(
+                [node, "-"], input=script, text=True, capture_output=True,
+                cwd=Path(__file__).resolve().parents[1], timeout=15,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr

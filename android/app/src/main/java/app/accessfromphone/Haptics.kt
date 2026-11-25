@@ -7,7 +7,7 @@ package app.accessfromphone
  */
 object Haptics {
     private val PATTERNS = mapOf(
-        "tick" to longArrayOf(6), "light" to longArrayOf(10), "medium" to longArrayOf(20), "heavy" to longArrayOf(35),
+        "tick" to longArrayOf(12), "light" to longArrayOf(20), "medium" to longArrayOf(32), "heavy" to longArrayOf(50),
         "success" to longArrayOf(10, 50, 10), "warning" to longArrayOf(20, 40, 20), "error" to longArrayOf(30, 50, 30, 50, 30),
         "alert" to longArrayOf(40, 70, 40, 70, 110),
     )

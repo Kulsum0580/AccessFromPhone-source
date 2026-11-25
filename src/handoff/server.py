@@ -306,6 +306,7 @@ def create_app(settings: Settings, planner: Planner | None = None) -> FastAPI:
     manager.screen = screen  # the PC page and the desktop window reach it through the manager
     app.state.screen = screen
     daily = Daily(settings, manager, notifier, clipboard=screen.clipboard)  # everyday helpers: quick controls, inbox, notes, reminders, watchers, briefing...
+    manager.activity_tracker = daily.activity
     app.state.daily = daily
     if accounts is not None:
         accounts.on_signed_out = lambda gone: (access.sessions.end(gone.id, "signed_out"), screen.revoke(gone.id))

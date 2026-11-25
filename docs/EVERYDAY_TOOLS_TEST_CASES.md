@@ -268,19 +268,23 @@ Need **Operator**. Open **Remind**.
 
 Need **Operator**. Open **Watch**. Three kinds: **A program**, **A download**, **PC goes quiet**. Tap **Watch something** to open the form.
 
+Program-watch notifications include the selected executable name even when `push.show_details` is false. That name passes through the push provider and may appear on the phone's lock screen. Other watch details still follow `push.show_details`.
+
 ### 6.1 A program
 
 | ID | Test | Steps | Expected | Result | Notes |
 |---|---|---|---|---|---|
-| WP-01 | List loads | Choose **A program** | Up to 14 running programs as buttons (biggest memory first, "×N" for several copies) | | |
+| WP-01 | List loads | Choose **A program** | Search box and dropdown containing the returned running programs in alphabetical order, with "×N" for several copies. No top-14 or top-25 cutoff | | |
 | WP-02 | Watch Notepad | Open Notepad, choose `notepad.exe`, leave "Then: just tell me", tap **Watch** | Toast "I'll tell you". Listed as "notepad.exe to finish" | | |
-| WP-03 | Fires | Close Notepad | Within about 10–20 s a toast/push "Finished: notepad.exe has finished." The watcher disappears | | |
+| WP-03 | Fires | Close Notepad | Within about 10–20 s a toast/push "Finished: notepad.exe has closed." The program name is included even with `push.show_details: false`. The watcher disappears | | |
 | WP-04 | Restart is not "finished" | Close and reopen Notepad within a few seconds | No alert (it needs to stay gone for two checks) | | |
 | WP-05 | Nothing chosen | Tap **Watch** with nothing picked | Toast "Pick one first." | | |
 | WP-06 | Not running (API) | Watch `ghost.exe` | 422 "ghost.exe is not running now." | | |
 | WP-07 | Bad names (API) | `""`, `..\x.exe`, `a*b`, 101 characters | Each 422 | | |
 | WP-08 | Several copies | Open 3 Chrome windows, watch `chrome.exe` | Fires only when **all** copies have closed | | |
 | WP-09 | Process list is for Operators | View-only/editor phone | API 403; UI shows lock note | | |
+| WP-10 | Find a small program | Open Notepad on the PC. In Watch, tap **Refresh programs**, type `notepad` in **Search programs**, then open **Program to watch** | `notepad.exe` appears even with more than 25 larger programs running. Select it and add the watch | | |
+| WP-11 | No matching program | Search for a name that is not running | Dropdown says "No matching programs" when no program is already selected; nothing is watched until a program is selected | | |
 
 ### 6.2 A download (new file in a folder)
 
@@ -322,7 +326,7 @@ Need **Operator**. Open **Watch**. Three kinds: **A program**, **A download**, *
 | WT-09 | Limit | Add 20 watchers, then a 21st | Error "There are already 20 watchers. Remove one first." | | |
 | WT-10 | Several together | Two watchers finishing at once | Both alerts arrive | | |
 | WT-11 | Log | After adding and firing | `watch_added` and `watch_fired` in Activity | | |
-| WT-12 | Locked phone | Lock phone, let a watcher finish | Push "Finished" arrives ("Something you were watching has finished." unless details are on) | | |
+| WT-12 | Locked phone | Lock phone, let a watcher finish | Push "Finished" arrives. A program watch names the program, e.g. "notepad.exe has closed." Other watches say "Something you were watching has finished." unless details are on | | |
 
 ---
 

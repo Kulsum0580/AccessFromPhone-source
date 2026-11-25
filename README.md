@@ -163,6 +163,16 @@ A small chip in the phone's top bar shows the PC's battery (a bolt when it is ch
 
 You can also just ask in the chat: "what's my battery?", "network speed", "how is my PC doing?". The answer comes from the PC's own readings, not from the AI. Everything is read-only and stays on your network. It needs the `psutil` package, which is installed with the app.
 
+## Application usage history
+
+Tracking is **off by default**. On the PC's signed-in owner page, open **Usage tracking**, check **Record application usage**, and accept the consent prompt. On the paired **Admin phone**, open **Briefing > PC activity** for the current foreground application, observed open applications, per-app active time, idle periods, a daily timeline, and application-window events. Shared-link connections and other phones cannot read this history. No new Android APK is required for this PC-served view.
+
+The PC page shows whether recording is on or paused; the installed app also shows it in its tray menu and tooltip. **Pause recording** stops collection. The PC's global **Pause** suspends it too. Exclude executable names such as `private-app.exe`, one per line, to omit those applications from future samples. Previously recorded history is unchanged by exclusions. **Delete history** pauses recording and removes all recorded usage; resume explicitly when ready.
+
+In today's **Open applications** list, swipe an app left and choose **Close**, or use its close icon. Confirm to request a normal close of all its windows. Windows may show a save prompt on the PC, and the row remains until a live sample observes that it is gone. If an ordinary app remains open after a close attempt, its power icon offers **Force quit** with a separate confirmation: unsaved work will be lost. Force quit checks that the targeted processes have exited before reporting success. Only the paired Admin phone may do this, while recording is on and the PC is not paused. File Explorer's folder windows can be closed normally; the desktop, shared Windows hosts and this server's process chain cannot be force-quit. Windows may deny access to elevated apps; close those on the PC. Idle status keeps the foreground app's name and logo visible without counting idle time as active usage.
+
+Only application names and timestamps are stored locally, with a rolling seven-day retention period enforced while the app runs and on restart. There are no window titles, keystrokes, document contents or screenshots. History starts after opt-in and cannot reconstruct earlier work. Windows is sampled about every five seconds: foreground time is an estimate, not proof of productive work; idle begins after 60 seconds without input. Open-window time is not active usage, brief open/close events can be missed, and sleep or long sampling gaps are shown as not tracked. Reports use the PC's calendar dates and the phone's timezone for displayed times.
+
 ## The Windows app and installer
 
 Customers don't run Python. They run **AccessFromPhone-Setup-x.y.z.exe**: a wizard (no administrator prompt) that installs the app for the current user, with a Start menu entry, an optional desktop shortcut, and an optional *Start AccessFromPhone when I sign in to Windows*.
@@ -401,6 +411,8 @@ The page opens on **Home**, a control center for the PC, and the chat is one tab
 
 Files, Pictures, Battery and the rest are one tap away in the tab bar, or by asking in the chat.
 
+Haptic feedback follows the action: short ticks for navigation, selections and slider changes; light taps for ordinary actions such as choosing files; medium taps for primary actions; and stronger taps for destructive actions. Success, warning and error results keep their distinct patterns. The shared controls avoid duplicate tap vibrations and rate-limit slider feedback. Turn it off with **Settings > Look and feel > Haptic feedback**. Android uses native vibration; browsers need vibration support and may restrict it (iPhone browsers do not support it).
+
 ## Everyday tools
 
 Below the PC card, Home has a **Control centre** card for the things people do on a PC every day. It appears only when `daily.enabled` is on (the default) and the PC answers; the page fetches its script on demand, so a PC with it off sends nothing extra.
@@ -410,7 +422,7 @@ The whole phone page has a "premium glass" look (`glass.css`, loaded after `app.
 | Tool | What it does | Who may (access level) |
 |---|---|---|
 | **Volume and brightness sliders, media keys** | Drag a glass slider to set the PC's real volume (it shows the real level, and the speaker icon mutes) or a laptop screen's brightness (sent when you let go; a desktop monitor says it can't). Previous / play-pause / next are the same keys a keyboard's media row sends. Below Operator the sliders show the level but cannot be moved, and the media keys are hidden. | Operator |
-| **Inbox** | **To the PC:** send text, a link or files from the phone (up to `daily.max_upload_mb`), or drag files onto the sheet on a tablet or computer; each file shows its own progress bar, speed and time left, and can be cancelled. Text can go on the PC's clipboard, a link can be opened in the PC's browser (asks first). Files land in `Inbox` and are never opened or run by the app; a program or script is marked. **To this phone:** files you drop in the `To phone` folder on the PC show up to save. | Send/remove: Editor. Clipboard and open link: Operator. Looking and saving: any |
+| **Send to PC** | Send text, a link or files from the phone (up to `daily.max_upload_mb`), or drag files onto the sheet on a tablet or computer; each file shows its own progress bar, speed and time left, and can be cancelled. Text can go on the PC's clipboard, a link can be opened in the PC's browser (asks first). Files land in `Inbox` and are never opened or run by the app; a program or script is marked. Sent items stay below the sending controls. Use **Files** to browse and download PC files to your phone. | Send/remove: Editor. Clipboard and open link: Operator. Looking and saving: any |
 | **Notes** | Type or dictate a note or to-do. Saved as plain text, one file a day (`Notes 2026-05-04.md`) in the `Notes` folder, so any program can open them. | Editor |
 | **Remind** | A reminder, or a power action (lock, sleep, ...) at a time, once or daily, on weekdays or weekly. Only what `power.remote_actions` allows; hibernate, restart and shut down need the Admin phone. A task the PC missed (it was off) never runs a power action late; a missed reminder still arrives, marked late. Each scheduled action is confirmed when you set it and is logged. | Operator |
 | **Watch** | "Tell me when…" a program stops, a new download finishes arriving (it must stop growing; a browser's half-file never counts), or the processor goes quiet for half a minute. It can then lock or sleep the PC. Fires once, then goes away. | Operator |

@@ -212,16 +212,19 @@
 
   /* ===================================================================== haptics */
 
-  const PATTERNS = { tick: 6, light: 10, medium: 20, heavy: 35, success: [10, 50, 10], warning: [20, 40, 20], error: [30, 50, 30, 50, 30], alert: [40, 70, 40, 70, 110] };
+  const PATTERNS = { tick: 12, light: 20, medium: 32, heavy: 50, success: [10, 50, 10], warning: [20, 40, 20], error: [30, 50, 30, 50, 30], alert: [40, 70, 40, 70, 110] };
   const canVibrate = typeof navigator.vibrate === "function";
+  let actionFeedback = null;
   function haptic(kind = "light") {
     if (!cfg.haptics) return;
+    if (actionFeedback && !actionFeedback.allow(kind)) return;
     // The phone app vibrates natively: that works even before the first tap (a browser ignores vibration until then) and is the same on every phone.
     if (window.AfpApp && window.AfpApp.haptic) { try { window.AfpApp.haptic(kind); } catch { /* the app is closing */ } return; }
     if (!canVibrate) return;
     if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return; // the browser ignores it until the first tap
-    try { navigator.vibrate(PATTERNS[kind] || 10); } catch { /* not allowed yet: needs a tap first */ }
+    try { navigator.vibrate(PATTERNS[kind] || PATTERNS.light); } catch { /* not allowed yet: needs a tap first */ }
   }
+  if (window.AfpUx) actionFeedback = window.AfpUx.actionHaptics(document, haptic);
 
   /* ===================================================================== sounds: made on the phone, no files needed */
 
@@ -502,7 +505,7 @@
     const sheet = h("div", { class: "sheet" + (full ? " full" : ""), role: "dialog", "aria-modal": "true", "aria-label": title, tabindex: "-1" });
     const inner = h("div", { class: "sheet-body" }, body);
     sheet.append(h("div", { class: "sheet-grip" }),
-      h("div", { class: "sheet-head" }, h("h2", { text: title }), h("button", { class: "iconbtn", type: "button", "aria-label": "Close", onclick: () => closeSheet() }, ico("x"))), inner);
+      h("div", { class: "sheet-head" }, h("h2", { text: title }), h("button", { class: "iconbtn", type: "button", "aria-label": "Close", "data-haptic": "tick", onclick: () => closeSheet() }, ico("x"))), inner);
     wrap.append(sheet);
     wrap.addEventListener("pointerdown", (e) => { if (e.target === wrap) closeSheet(); });
     $("#layer").append(wrap);
@@ -562,7 +565,7 @@
     return new Promise((resolve) => {
       const wrap = h("div", { class: "dlg-wrap", role: "presentation" });
       const yes = h("button", { class: "btn " + (tone === "danger" ? "danger" : "primary"), type: "button" }, ok);
-      const no = h("button", { class: "btn ghost", type: "button" }, cancel || "Close");
+      const no = h("button", { class: "btn ghost", type: "button", "data-haptic": "tick" }, cancel || "Close");
       if (!cancel) no.hidden = true;
       const box = h("div", { class: "dlg " + tone, role: "alertdialog", "aria-modal": "true", "aria-label": title },
         h("div", { class: "dlg-ico" }, ico(icon, 26)), h("h2", { text: title }), message ? h("p", { text: message }) : null, h("div", { class: "dlg-btns" + (cancel ? "" : " one") }, no, yes));
@@ -1425,6 +1428,7 @@
         if (want && Date.now() - began < MAX_MS) { base = text(); cur = ""; try { r.start(); return; } catch { /* fall through */ } }
         want = false;
         const f = ended; ended = null; if (f) f(text());
+        cb.finished && cb.finished();
       };
       return r;
     }
@@ -2722,7 +2726,7 @@
       { done: true, title: "Connect your phone", sub: `Paired with ${(S.info && S.info.pc) || "your PC"}` },
       { done: (f.granted || []).length > 0, title: "Allow a folder", sub: "Pick a folder in Files and allow it", action: ["Open", () => openFolder("")] },
       { done: Push.on(), title: "Turn on notifications", sub: "Know when a request needs you", action: ["Turn on", async () => {
-        try { if (!Push.info) await Push.load(); const why = Push.why(); if (why) { toast(why); return; } await Push.enable(); await Push.load(); S.homeSig = ""; renderHome(); toast("Notifications are on"); haptic("success"); }
+        try { if (!Push.info) await Push.load(); const why = Push.why(); if (why) { toast(why); return; } await Push.enable(); await Push.load(); S.homeSig = ""; renderHome(); if (!Push.native) { toast("Notifications are on"); haptic("success"); } }
         catch (e) { toast(e.message); haptic("error"); }
       }] },
       { done: !!(u && u.configured), title: "Set up unlocking", sub: "Unlock this PC from your phone", action: ["How", () => openSheet({ title: "Set up unlocking", route: "unlockhelp",
@@ -3547,6 +3551,7 @@
   // the PC says which it can send. The phone only hands over an address; nothing about your requests is stored by anyone else.
   const Push = {
     info: null,
+    nativeEnablePending: false,
     native: !!(window.AfpApp && window.AfpApp.enablePush),
     async load() { try { this.info = await (await api("/push")).json(); } catch (e) { if (e.code === 401) throw e; this.info = null; } return this.info; },
     /** Why notifications can't be turned on here, or "" when they can. */
@@ -3565,8 +3570,12 @@
     },
     on() { return !!(this.info && this.info.subscribed && this.info.subscribed.length); },
     bytes(text) { const raw = atob(text.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (text.length % 4)) % 4)); return Uint8Array.from(raw, (c) => c.charCodeAt(0)); },
-    async enable() {
-      if (this.native) { window.AfpApp.enablePush(); return; }  // the app asks Android for permission, then answers with an "afp-push" event
+    async enable({ quiet = false } = {}) {
+      if (this.native) {
+        if (!quiet) this.nativeEnablePending = true;
+        try { window.AfpApp.enablePush(); } catch (error) { this.nativeEnablePending = false; throw error; }
+        return;
+      }
       const permission = await Notification.requestPermission();
       if (permission !== "granted") throw new Error("Notifications were not allowed.");
       const reg = await navigator.serviceWorker.ready;
@@ -3578,6 +3587,7 @@
     },
     async send(body) { const r = await (await api("/push/subscribe", { method: "POST", body: JSON.stringify(body) })).json(); this.info.subscribed = r.subscribed; store.setRaw("afp_push", "1"); },
     async disable() {
+      this.nativeEnablePending = false;
       store.del("afp_push");
       if ("serviceWorker" in navigator) { try { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && (await reg.pushManager.getSubscription()); if (sub) await sub.unsubscribe(); } catch { /* nothing to remove */ } }
       if (window.AfpApp && window.AfpApp.disablePush) window.AfpApp.disablePush();
@@ -3586,15 +3596,17 @@
     /** On every start: if it was on, make sure the PC still has this phone's current address (browsers and Firebase change it now and then). */
     async refreshQuietly() {
       if (!S.token || store.raw("afp_push") !== "1") return;
-      try { await this.load(); if (this.info && this.info.enabled && !this.why()) { if (this.native || Notification.permission === "granted") await this.enable(); } } catch { /* try again next start */ }
+      try { await this.load(); if (this.info && this.info.enabled && !this.why()) { if (this.native || Notification.permission === "granted") await this.enable({ quiet: true }); } } catch { /* try again next start */ }
     },
   };
   // The Android app answers enablePush() (and a changed token) with this event.
   window.addEventListener("afp-push", async (event) => {
     const d = event.detail || {};
-    if (d.error) { toast(d.error); return; }
+    const announce = Push.nativeEnablePending;
+    Push.nativeEnablePending = false;
+    if (d.error) { if (announce) toast(d.error); return; }
     if (!d.token || !S.token) return;
-    try { if (!Push.info) await Push.load(); await Push.send({ kind: "fcm", token: d.token }); toast("Notifications are on"); haptic("success"); } catch (e) { toast("Couldn't turn notifications on: " + e.message); }
+    try { if (!Push.info) await Push.load(); await Push.send({ kind: "fcm", token: d.token }); if (announce) { toast("Notifications are on"); haptic("success"); } } catch (e) { if (announce) toast("Couldn't turn notifications on: " + e.message); }
     refreshNotifyRow();
   });
 

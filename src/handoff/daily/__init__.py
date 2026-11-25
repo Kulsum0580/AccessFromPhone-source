@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import itertools
+import sys
 import threading
 import time
 from collections import deque
@@ -15,6 +16,7 @@ from .. import power, sysinfo
 from ..config import Settings
 from ..push import Message
 from . import audio_volume, briefing, controls, places
+from .activity import Activity, windows_sample
 from .inbox import Inbox
 from .notes import Notes
 from .notifications import Mirror
@@ -37,6 +39,8 @@ class Daily:
         self.manager, self.notifier, self._clock = manager, notifier, clock
         self._power = power_runner or power.schedule
         db, folder = manager.db, self.cfg.folder
+        self.activity = Activity(db, windows_sample, clock=clock, supported=sys.platform == "win32",
+                     suspended=lambda: self.manager.pause_switch.paused)
         self.folder = Path(folder)
         self._alerts: deque[dict] = deque(maxlen=ALERT_KEEP)
         self._alert_ids = itertools.count(1)
@@ -112,11 +116,11 @@ class Daily:
 
     # -- telling the phone ---------------------------------------------------------------------------------------------
 
-    def notify(self, title: str, body: str, kind: str) -> None:
-        """Show it in the phone's page, and push it. A push passes through Google or Apple, so it holds the words only when push.show_details is on."""
+    def notify(self, title: str, body: str, kind: str, *, public_body: str | None = None) -> None:
+        """Push full details when enabled; otherwise use an explicit public summary or generic text."""
         with self._alert_lock:
             self._alerts.append({"id": next(self._alert_ids), "title": title, "body": body, "kind": kind, "time": self._clock()})
-        shown = body if self.settings.push.show_details else {"watch": "Something you were watching has finished."}.get(kind, "Tap to see it.")
+        shown = body if self.settings.push.show_details else public_body or {"watch": "Something you were watching has finished."}.get(kind, "Tap to see it.")
         message = Message(title, shown, "", kind, ttl=900)
         threading.Thread(target=lambda: self._push(message), name="daily-push", daemon=True).start()
 
@@ -153,7 +157,7 @@ class Daily:
     # -- the background thread -----------------------------------------------------------------------------------------
 
     def tick(self) -> None:
-        for step in (self.scheduler.tick, self.watchers.tick, self.mirror.poll if self.cfg.notifications else None):
+        for step in (self.activity.tick, self.scheduler.tick, self.watchers.tick, self.mirror.poll if self.cfg.notifications else None):
             if step is None:
                 continue
             try:
@@ -174,3 +178,4 @@ class Daily:
 
     def stop(self) -> None:
         self._stop.set()
+        self.activity.reset()

@@ -53,6 +53,51 @@
 
   /* ---------------------------------------------------------------- small helpers  */
 
+  function actionHaptics(host, emit, options) {
+    options = options || {};
+    var now = options.now || Date.now, defer = options.defer || function (fn) { return setTimeout(fn, 0); };
+    var active = null, lastControl = null, lastAt = -Infinity;
+    var impacts = ["tick", "light", "medium", "heavy"];
+    var controls = 'button, a[href], input[type="button"], input[type="submit"], input[type="reset"], input[type="checkbox"], input[type="radio"], input[type="range"], select, [role="button"], [role="tab"], [role="switch"], [role="menuitem"], [role="checkbox"], [role="radio"]';
+
+    function allow(kind) {
+      if (active && impacts.indexOf(kind) >= 0) {
+        if (active.used) return false;
+        active.used = true;
+      }
+      return true;
+    }
+
+    function handle(event) {
+      if (event.isTrusted === false || !event.target || !event.target.closest) return;
+      var control = event.target.closest(event.type === "click" ? controls : "input, select");
+      if (!control || control.matches(":disabled") || control.closest('[inert], [aria-disabled="true"]')) return;
+      if (event.type !== "click" && !control.matches('select, input[type="range"], input[type="checkbox"], input[type="radio"], input[type="file"], input[type="date"], input[type="time"], input[type="datetime-local"], input[type="color"]')) return;
+      if (event.type === "input" && !control.matches('input[type="range"]')) return;
+      if (control.matches('input[type="file"]') && !control.files.length) return;
+
+      var frame = { used: false };
+      active = frame;
+      defer(function () { if (active === frame) active = null; });
+      var time = now();
+      if (event.type !== "click" && control === lastControl && time - lastAt < 100) { frame.used = true; return; }
+      var kind = control.getAttribute("data-haptic");
+      if (kind === "none") { frame.used = true; return; }
+      if (impacts.indexOf(kind) < 0) {
+        if (control.matches('.danger, .swp-act, input[type="reset"]')) kind = "heavy";
+        else if (control.matches('.primary, input[type="submit"]')) kind = "medium";
+        else if (control.matches('input, select, [aria-pressed], [aria-checked], [role="tab"], [role="menuitem"], [role="switch"], [role="checkbox"], [role="radio"], .dy-x') || control.closest('nav, [role="tablist"], .seg')) kind = "tick";
+        else kind = "light";
+      }
+      emit(kind);
+      lastControl = control;
+      lastAt = time;
+    }
+
+    ["click", "input", "change"].forEach(function (type) { host.addEventListener(type, handle, true); });
+    return { allow: allow };
+  }
+
   var hasDom = typeof document !== "undefined";
   var calm = function () {
     if (!hasDom) return true;
@@ -72,6 +117,7 @@
     trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
     arrow: '<path d="M12 5v14M5 12l7 7 7-7"/>',
     check: '<path d="m5 12 5 5 9-10"/>',
+    close: '<path d="m6 6 12 12M18 6 6 18"/>',
   };
   function icon(name, size) {
     var s = el("span", "ico");
@@ -96,7 +142,7 @@
     act.type = "button";
     act.setAttribute("aria-label", opts.label || "Delete");
     act.tabIndex = -1;
-    act.append(icon("trash", 22), el("span", "", opts.label || "Delete"));
+    act.append(icon(opts.icon || "trash", 22), el("span", "", opts.label || "Delete"));
     bg.append(act);
     var fg = el("div", "swp-fg");
     fg.append(row);
@@ -119,6 +165,12 @@
 
     function remove() {
       if (busy) return;
+      if (opts.onAction) {
+        busy = true; act.disabled = true;
+        var finishAction = function () { busy = false; act.disabled = false; close(); };
+        Promise.resolve().then(opts.onAction).then(finishAction, finishAction);
+        return;
+      }
       busy = true;
       if (opts.tick) opts.tick("medium");
       var width = wrap.offsetWidth, height = wrap.offsetHeight;
@@ -574,7 +626,7 @@
   }
 
   var api = { resist: resist, swipeTarget: swipeTarget, swipeOffset: swipeOffset, pullState: pullState, REVEAL: REVEAL, PULL_READY: PULL_READY,
-              swipe: swipe, pull: pull, burst: burst, spot: spot, art: art, skeleton: skeleton, arts: function () { return Object.keys(ART); },
+              swipe: swipe, pull: pull, burst: burst, spot: spot, art: art, skeleton: skeleton, arts: function () { return Object.keys(ART); }, actionHaptics: actionHaptics,
               paint: paint, strokePlan: strokePlan, palette: palette, hexToHsl: hexToHsl, mulberry: mulberry, easeInOut: easeInOut, pointAt: pointAt, themes: function () { return Object.keys(THEMES); } };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.AfpUx = api;
