@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en" data-theme="dark" data-accent="cyan" data-text="m">
+<html lang="en" data-theme="light" data-accent="cyan" data-text="m">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>AccessFromPhone</title>
 <meta name="description" content="Ask your PC to do things from your phone. You approve every change.">
-<meta name="theme-color" content="#0b111b" id="themeColor">
+<meta name="theme-color" content="#f1f6fd" id="themeColor">
 <meta name="color-scheme" content="dark light">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,7 +19,7 @@
 (function () {
   try {
     var s = JSON.parse(localStorage.getItem("afp_settings") || "{}"), r = document.documentElement;
-    var dark = s.theme === "dark" || (s.theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches) || !s.theme;
+    var dark = s.theme === "dark" || (s.theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
     r.dataset.theme = dark ? "dark" : "light";
     if (s.accent) r.dataset.accent = s.accent;
     if (s.text) r.dataset.text = s.text;
