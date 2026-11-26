@@ -6,6 +6,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HapticsTest {
+    @Test fun `each action category has a distinct increasing tap length`() {
+        val taps = listOf("tick", "light", "medium", "heavy").map { Haptics.waveform(it)[1] }
+        assertEquals(listOf(12L, 20L, 32L, 50L), taps)
+        assertTrue(taps.zipWithNext().all { (before, after) -> after > before })
+        val patterns = listOf("tick", "light", "medium", "heavy", "success", "warning", "error", "alert")
+            .map { Haptics.waveform(it).toList() }
+        assertEquals(patterns.size, patterns.toSet().size)
+    }
+
     @Test fun `a buzz is a delay of zero, then buzz and pause in turn`() {
         assertArrayEquals(longArrayOf(0, 12, 50, 12), Haptics.waveform("success"))
         assertArrayEquals(longArrayOf(0, 40, 70, 40, 70, 110), Haptics.waveform("alert"))

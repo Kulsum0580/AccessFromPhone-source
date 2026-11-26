@@ -67,7 +67,7 @@ def _working_sets() -> dict[int, int]:
     return found
 
 
-def list_processes(limit: int = 25) -> list[dict]:
+def list_processes(limit: int | None = 25) -> list[dict]:
     """The programs running now, biggest memory first, one line per program name."""
     if psutil is None:
         return []
@@ -122,7 +122,7 @@ def _not_locked(path: Path) -> bool:
 
 
 class Watchers:
-    def __init__(self, db: Database, *, clock: Callable[[], float] = time.time, notify: Callable[[str, str, str], None],
+    def __init__(self, db: Database, *, clock: Callable[[], float] = time.time, notify: Callable[..., None],
                  run_power: Callable[[str], str], allowed_power: Callable[[], set[str]], note: Callable[..., None] = lambda *a, **k: None,
                  running: Callable[[str], bool] | None = None, cpu: Callable[[], float] | None = None, files: Callable[[Path], dict[str, int]] | None = None,
                  resolve_folder: Callable[[str], Path] | None = None):
@@ -196,7 +196,10 @@ class Watchers:
         body = message + (f" Now: {then}." if then else "")
         self._note("watch_fired", kind=row["kind"], label=row["label"], then=then)
         try:
-            self._notify("Finished", body, "watch")
+            if row["kind"] == "process":
+                self._notify("Finished", body, "watch", public_body=f"{row['target']} has closed.")
+            else:
+                self._notify("Finished", body, "watch")
         except Exception:  # noqa: BLE001
             pass
         if then and then in self._allowed():
@@ -210,7 +213,7 @@ class Watchers:
         kind, target = row["kind"], row["target"]
         if kind == "process":
             state["gone"] = 0 if self._running(target) else state.get("gone", 0) + 1
-            return f"{target} has finished." if state["gone"] >= GONE_TICKS else None
+            return f"{target} has closed." if state["gone"] >= GONE_TICKS else None
         if kind == "quiet":
             state["quiet"] = state.get("quiet", 0) + 1 if self._cpu() < int(target) else 0
             return "The PC has gone quiet. Whatever it was busy with is probably done." if state["quiet"] >= QUIET_TICKS else None

@@ -358,9 +358,61 @@ def test_a_folder_watcher_uses_the_usual_folders_or_what_the_phone_may_read(clie
     assert client.post("/api/daily/watch", json={"kind": "folder", "target": str(workspace[0][0])}).status_code == 200
 
 
+def test_program_watch_push_names_the_program_with_details_off(client, monkeypatch):
+    import threading
+
+    sent = []
+    delivered = threading.Event()
+
+    def capture(message):
+        sent.append(message)
+        delivered.set()
+
+    client.daily.settings.push.show_details = False
+    monkeypatch.setattr(client.daily, "_push", capture)
+    monkeypatch.setattr(client.daily.watchers, "_running", lambda name: True)
+    client.daily.watchers.add(kind="process", target="notepad.exe")
+    monkeypatch.setattr(client.daily.watchers, "_running", lambda name: False)
+    client.daily.watchers.tick()
+    client.daily.watchers.tick()
+    assert delivered.wait(2)
+    assert len(sent) == 1
+    assert sent[0].body == "notepad.exe has closed."
+
+
+def test_other_daily_push_details_stay_private(client, monkeypatch):
+    import threading
+
+    client.daily.settings.push.show_details = False
+    for kind, body, expected in (
+        ("watch", "private.pdf has arrived in Documents.", "Something you were watching has finished."),
+        ("remind", "Private reminder text", "Tap to see it."),
+    ):
+        sent = []
+        delivered = threading.Event()
+
+        def capture(message):
+            sent.append(message)
+            delivered.set()
+
+        monkeypatch.setattr(client.daily, "_push", capture)
+        client.daily.notify("Finished", body, kind)
+        assert delivered.wait(2)
+        assert sent[0].body == expected
+
+
 def test_the_programs_list_is_for_operators_and_has_names_only(client):
     processes = client.get("/api/daily/processes").json()["processes"]
     assert processes and set(processes[0]) == {"name", "count", "memory_mb"}
+
+
+def test_the_programs_list_does_not_hide_low_memory_programs(client, monkeypatch):
+    programs = [{"name": f"program-{index}.exe", "count": 1, "memory_mb": 100} for index in range(30)]
+    programs.append({"name": "notepad.exe", "count": 1, "memory_mb": 1})
+    monkeypatch.setattr("handoff.daily.routes.list_processes", lambda limit=25: programs[:limit])
+    response = client.get("/api/daily/processes")
+    assert response.status_code == 200
+    assert response.json()["processes"] == programs
 
 
 # ---- the briefing, recents, pins -------------------------------------------------------------------------------------------
@@ -491,6 +543,106 @@ def world(project, monkeypatch):
 def set_level(admin, name, level):
     device = next(d["id"] for d in admin.get("/admin/devices", headers=H).json() if d["name"] == name)
     assert admin.post("/admin/access/level", json={"device_id": device, "level": level}, headers=H).status_code == 200
+
+
+def test_activity_requires_paired_admin_and_pc_consent(world, monkeypatch):
+    from handoff.daily.activity import Sample
+    from unittest.mock import Mock
+
+    phone, admin, people, app = world
+    tracker = app.state.daily.activity
+    icon_lookup = Mock(side_effect=lambda names: {name: "data:image/png;base64,aWNvbg==" for name in names})
+    monkeypatch.setattr(tracker.icons, "for_names", icon_lookup)
+    monkeypatch.setattr(tracker, "supported", True)
+    assert not admin.get("/admin/usage", headers=H).json()["enabled"]
+    assert phone.get("/api/daily/activity").status_code == 401
+    for name in ("Ben", "Chen"):
+        assert phone.get("/api/daily/activity", headers=people[name]).status_code == 403
+        assert "activity" not in phone.get("/api/daily/briefing", headers=people[name]).json()
+    icon_lookup.assert_not_called()
+    assert phone.post("/api/daily/activity", headers=people["Asha"], json={"enabled": True}).status_code == 405
+    assert phone.get("/api/daily/activity", headers=people["Asha"]).json()["enabled"] is False
+    assert admin.post("/admin/usage", headers=H, json={"enabled": True, "excluded": ["private.exe"]}).status_code == 200
+    monkeypatch.setattr(tracker, "sample", lambda: Sample("notepad.exe", ("notepad.exe", "private.exe"), 0))
+    now = [tracker.clock()]
+    monkeypatch.setattr(tracker, "clock", lambda: now[0])
+    tracker.tick()
+    now[0] += 5
+    tracker.tick()
+    report = phone.get("/api/daily/activity", headers=people["Asha"]).json()
+    assert report["totals"]["active"] == 5
+    assert report["open_apps"] == ["notepad.exe"]
+    assert report["icons"] == {"notepad.exe": "data:image/png;base64,aWNvbg=="}
+    icon_lookup.assert_called_with({"notepad.exe"})
+    icon_lookup.side_effect = OSError("Icon unavailable")
+    fallback = phone.get("/api/daily/activity", headers=people["Asha"])
+    assert fallback.status_code == 200 and fallback.json()["icons"] == {}
+    assert phone.get("/api/daily/activity?day=bad", headers=people["Asha"]).status_code == 422
+    assert phone.get("/api/daily/activity?day=2099-01-01", headers=people["Asha"]).status_code == 422
+    assert admin.post("/admin/usage", headers=H, json={"enabled": True, "paused": True}).status_code == 200
+    assert not tracker.status()["recording"]
+    assert admin.delete("/admin/usage", headers=H).status_code == 200
+    assert tracker.report()["timeline"] == []
+    app.state.manager.access.store.set_admin(None)
+    assert phone.get("/api/daily/activity", headers=people["Asha"]).status_code == 403
+
+
+def test_activity_controls_reject_unauthenticated_or_cross_site_changes(world):
+    phone, admin, people, app = world
+    anonymous = TestClient(admin.app, base_url="http://127.0.0.1:8766")
+    assert anonymous.get("/admin/usage", headers=H).status_code == 401
+    assert anonymous.post("/admin/usage", headers=H, json={"enabled": True}).status_code == 401
+    assert admin.post("/admin/usage", json={"enabled": True}).status_code == 403
+    assert admin.post("/admin/usage", headers=H, json={"enabled": True, "excluded": ["C:/private.exe"]}).status_code == 422
+
+
+def test_close_application_needs_admin_confirmation_and_live_sample(world, monkeypatch):
+    from unittest.mock import Mock
+    from handoff import appctl
+    from handoff.daily.activity import Sample
+
+    phone, admin, people, app = world
+    close = Mock(return_value=2)
+    monkeypatch.setattr(appctl, "request_close", close)
+    tracker = app.state.daily.activity
+    monkeypatch.setattr(tracker, "supported", True)
+    monkeypatch.setattr(tracker, "sample", lambda: Sample("notepad.exe", ("notepad.exe",), 0))
+    tracker.configure(enabled=True)
+    tracker.tick()
+    path = "/api/daily/activity/close"
+    body = {"name": "notepad.exe", "confirmed": True}
+    assert phone.post(path, json=body).status_code == 401
+    for name in ("Ben", "Chen"):
+        assert phone.post(path, headers=people[name], json=body).status_code == 403
+    assert phone.post(path, headers=people["Asha"], json={"name": "notepad.exe"}).status_code == 422
+    assert phone.post(path, headers=people["Asha"], json={**body, "confirmed": False}).status_code == 422
+    assert phone.post(path, headers=people["Asha"], json={**body, "name": "other.exe"}).status_code == 409
+    close.assert_not_called()
+    response = phone.post(path, headers=people["Asha"], json=body)
+    assert response.status_code == 200 and response.json()["windows_requested"] == 2
+    close.assert_called_once_with("notepad.exe")
+    assert any(event["event"] == "application_close_requested" for event in app.state.manager.audit_events())
+    assert phone.post(path, headers=people["Ben"], json={**body, "force": True}).status_code == 403
+    assert phone.post(path, headers=people["Asha"], json={**body, "force": True, "confirmed": False}).status_code == 422
+    response = phone.post(path, headers=people["Asha"], json={**body, "force": True})
+    assert response.status_code == 200 and response.json()["processes_closed"] == 2
+    close.assert_called_with("notepad.exe", force=True)
+    assert any(event["event"] == "application_force_quit" for event in app.state.manager.audit_events())
+    close.side_effect = appctl.AppError("App refused the close request")
+    assert phone.post(path, headers=people["Asha"], json=body).status_code == 409
+    close.reset_mock()
+    tracker.configure(enabled=True, paused=True)
+    assert phone.post(path, headers=people["Asha"], json=body).status_code == 409
+    close.assert_not_called()
+    app.state.manager.pause_switch.pause("test")
+    assert phone.post(path, headers=people["Asha"], json=body).status_code == 423
+    close.assert_not_called()
+
+
+def test_shared_link_cannot_read_activity(client):
+    assert client.get("/api/daily/activity").status_code == 403
+    assert "activity" not in client.get("/api/daily/briefing").json()
+    assert client.post("/api/daily/activity/close", json={"name": "notepad.exe", "confirmed": True}).status_code == 403
 
 
 def test_a_view_only_phone_can_read_but_not_send_or_control(world):

@@ -169,6 +169,7 @@ class Node_ {
   setAttribute(k, v) { this.attrs[k] = String(v); }
   getAttribute(k) { return k in this.attrs ? this.attrs[k] : (k in this.props ? String(this.props[k]) : null); }
   get firstChild() { return this.kids[0] || null; }
+  get childNodes() { return this.kids; }
   replaceChildren(...kids) { this.filled = kids; this.kids = flat(kids); this.kids.forEach((k) => { if (k instanceof Node_) k.parent = this; }); }
   append(...kids) { this.kids.push(...flat(kids)); }
   replaceWith(node) { if (this.parent) { const i = this.parent.kids.indexOf(this); if (i >= 0) { this.parent.kids[i] = node; node.parent = this.parent; } } }
@@ -193,8 +194,9 @@ function rig(daily, answers = {}, opts = {}) {
       const out = typeof answers[key] === "function" ? answers[key](o) : (answers[key] || {});
       return { json: async () => out, blob: async () => ({}), headers: { get: () => null } };
     },
-    ask: async () => true, toast: (m) => toasts.push(m), haptic: () => {}, openSheet: ({ title, body }) => { const sheet = { title, body, close() {} }; sheets.push(sheet); return sheet; }, saveBlob() {}, askAccess() {},
+    ask: async () => true, toast: (m) => toasts.push(m), haptic: () => {}, openSheet: ({ title, body, onClose }) => { const sheet = { title, body, close() { if (onClose) onClose(); } }; sheets.push(sheet); return sheet; }, saveBlob() {}, askAccess() {},
     copy() {}, speech: null, lang: () => "en-IN", closeSheet() {}, openFolder() {}, openFile() {}, openScreen() {}, token: () => "t",
+    ...opts,
   };
   const c = D.create(deps);
   c.sync({ daily });
@@ -335,7 +337,7 @@ atest("the badges show how much is waiting, and hide at zero", async () => {
   const r = rig(ON, { ...LEVELS, "/daily/state": { counts: { in_inbox: 2, to_phone: 1, tasks: 0, watchers: 4 }, level: "operator", alert_id: 0 } });
   const card = r.c.homeCard(); await later();
   const badge = (key) => card.querySelector(`[data-badge="${key}"]`);
-  assert.strictEqual(badge("inbox").textContent, "3");
+  assert.strictEqual(badge("inbox").textContent, "2");
   assert.strictEqual(badge("tasks").hidden, true);
   assert.strictEqual(badge("watch").textContent, "4");
 });
@@ -354,6 +356,59 @@ const SHEET_DATA = {
   "/daily/notifications": { enabled: true, items: [], problem: "", available: true },
   "/daily/briefing": { lines: ["Nothing needs you right now."], status: { available: false }, updates: { count: 0, reboot: false }, inbox: {}, alerts: 0, next: [], top_programs: [] },
 };
+
+atest("Send to PC opens directly with sending controls and sent items, without download tabs", async () => {
+  const r = rig(ON, { ...SHEET_DATA, ...STATE("operator"), "/daily/inbox": {
+    ...SHEET_DATA["/daily/inbox"],
+    to_phone: [{ name: "phone-only.pdf", size: 50, time: NOW }],
+    to_pc: [...SHEET_DATA["/daily/inbox"].to_pc,
+      { id: "link1", kind: "link", text: "https://example.com", time: NOW },
+      { id: "file1", kind: "file", name: "sent.pdf", size: 50, time: NOW }],
+  } });
+  const card = r.c.homeCard(); await later();
+  assert.ok(card.find((node) => node.textContent === "Send to PC"));
+  r.c.openInbox(); await later();
+  const { title, body } = r.sheets[0];
+  assert.strictEqual(title, "Send to PC");
+  assert.ok(!body.find((node) => node.props["aria-label"] === "Direction"));
+  assert.ok(!body.find((node) => /To this phone|To the PC|phone-only.pdf/.test(node.textContent)));
+  assert.ok(body.find((node) => node.tag === "input" && node.props.type === "file" && node.props.multiple));
+  for (const label of ["Choose files…", "Send", "Copy", "To PC clipboard", "Open on PC", "Save", "sent.pdf", "hello"]) {
+    assert.ok(body.find((node) => node.textContent === label), label);
+  }
+  for (const text of ["a message", "https://example.com/shared"]) {
+    body.find((node) => node.tag === "textarea").value = "  " + text + "  ";
+    body.find((node) => node.tag === "button" && node.all().some((child) => child.textContent === "Send")).fire("click");
+    await later();
+    assert.deepStrictEqual(posts(r, "/daily/inbox/text").pop(), { text });
+    assert.strictEqual(body.find((node) => node.tag === "textarea").value, "");
+  }
+  assert.ok(!r.calls.some(([path]) => path.includes("tophone")));
+});
+
+atest("Choose files gives touch feedback before opening the picker", async () => {
+  const feedback = [];
+  const r = rig(ON, { ...SHEET_DATA, ...STATE("editor") }, { haptic: (kind) => feedback.push(kind) });
+  r.c.homeCard(); await later();
+  r.c.openInbox(); await later();
+  const body = r.sheets[0].body;
+  body.find((node) => node.tag === "input" && node.props.type === "file").click = () => feedback.push("picker");
+  feedback.length = 0;
+  body.find((node) => node.tag === "button" && node.all().some((child) => child.textContent === "Choose files…")).fire("click");
+  assert.deepStrictEqual(feedback, ["light", "picker"]);
+});
+
+atest("Send to PC keeps the empty state and does not offer sending to viewers", async () => {
+  for (const level of ["editor", "viewer"]) {
+    const r = rig(ON, { ...SHEET_DATA, ...STATE(level), "/daily/inbox": { to_pc: [], folders: { inbox: "C:\\x\\Inbox" } } });
+    r.c.homeCard(); await later();
+    r.c.openInbox(); await later();
+    const body = r.sheets[0].body;
+    assert.ok(body.find((node) => node.textContent === "Nothing sent yet"));
+    assert.strictEqual(!!body.find((node) => node.classes.has("dy-compose")), level === "editor");
+    assert.strictEqual(!!body.find((node) => node.classes.has("dy-lock")), level === "viewer");
+  }
+});
 
 for (const level of ["viewer", "editor", "operator", "admin"]) {
   atest(`a sheet is never filled with an empty slot (which a page would print as the word "null"), at ${level} level`, async () => {
@@ -398,6 +453,76 @@ atest("a sheet that cannot load says why and offers to try again", async () => {
   assert.ok(body.find((n) => n.tag === "button" && n.all().some((k) => k.tag === "span" && k.textContent === "Try again")));
 });
 
+atest("Notes keeps listening through silence and stops repeated errors after a real failure", async () => {
+  let callbacks, aborted = 0;
+  const speech = { status: () => "ok", start: (lang, handlers) => { callbacks = handlers; return "ok"; }, abort: () => { aborted++; } };
+  const fixture = rig(ON, SHEET_DATA, { speech });
+  fixture.c.openNotes(); await later();
+  const body = fixture.sheets[0].body;
+  const mic = body.querySelector(".dy-mic"), field = body.find((node) => node.tag === "textarea");
+  field.value = "First";
+  mic.onclick();
+  callbacks.error("no-speech");
+  assert.ok(mic.classList.contains("on"));
+  assert.strictEqual(fixture.toasts.length, 0);
+  callbacks.text("spoken note");
+  assert.strictEqual(field.value, "First spoken note");
+  callbacks.error("network");
+  callbacks.error("network");
+  assert.strictEqual(aborted, 1);
+  assert.strictEqual(fixture.toasts.length, 1);
+  assert.match(fixture.toasts[0], /internet/);
+  assert.ok(!mic.classList.contains("on"));
+  callbacks.text("late result");
+  assert.strictEqual(field.value, "First spoken note");
+});
+
+atest("Notes stops dictation on close, resets on completion, and explains permission errors", async () => {
+  let callbacks, aborted = 0;
+  const speech = { status: () => "ok", start: (lang, handlers) => { callbacks = handlers; return "ok"; }, abort: () => { aborted++; } };
+  const fixture = rig(ON, SHEET_DATA, { speech });
+  fixture.c.openNotes(); await later();
+  const mic = fixture.sheets[0].body.querySelector(".dy-mic");
+  mic.onclick(); callbacks.finished();
+  assert.ok(!mic.classList.contains("on"));
+  mic.onclick(); callbacks.error("not-allowed");
+  assert.match(fixture.toasts[0], /permission/);
+  mic.onclick(); fixture.sheets[0].close();
+  assert.strictEqual(aborted, 2);
+  assert.ok(!mic.classList.contains("on"));
+  callbacks.error("network");
+  assert.strictEqual(fixture.toasts.length, 1);
+});
+
+atest("Watch can search and select Notepad beyond the old top-14 list", async () => {
+  const programs = Array.from({ length: 30 }, (_, index) => ({ name: "program-" + index + ".exe", count: 1, memory_mb: 100 }));
+  programs.push({ name: "notepad.exe", count: 1, memory_mb: 1 });
+  const fixture = rig(ON, { ...SHEET_DATA, "/daily/processes": { processes: programs } });
+  fixture.c.openWatch(); await later();
+  const body = fixture.sheets[0].body;
+  const select = body.find((node) => node.props["aria-label"] === "Program to watch");
+  const search = body.find((node) => node.props["aria-label"] === "Search programs");
+  assert.strictEqual(select.kids.length, 32);
+  search.value = "NOTEPAD"; search.oninput();
+  assert.deepStrictEqual(select.kids.map((node) => node.props.value), ["", "notepad.exe"]);
+  select.value = "notepad.exe"; select.onchange();
+  const watch = body.querySelector(".dy-form").find((node) => node.tag === "button" && node.all().some((child) => child.tag === "span" && child.textContent === "Watch"));
+  watch.fire("click"); await later();
+  assert.deepStrictEqual(posts(fixture, "/daily/watch"), [{ kind: "process", target: "notepad.exe", then: "" }]);
+});
+
+atest("Watch refreshes running programs and handles an empty search", async () => {
+  let programs = [];
+  const fixture = rig(ON, { ...SHEET_DATA, "/daily/processes": () => ({ processes: programs }) });
+  fixture.c.openWatch(); await later();
+  const body = fixture.sheets[0].body;
+  assert.strictEqual(body.find((node) => node.tag === "select").kids[0].textContent, "No matching programs");
+  programs = [{ name: "notepad.exe", count: 2 }];
+  body.find((node) => node.tag === "button" && node.all().some((child) => child.textContent === "Refresh programs")).fire("click");
+  await later();
+  assert.strictEqual(body.find((node) => node.tag === "select").kids[1].props.value, "notepad.exe");
+});
+
 atest("a reminder form opens closed, and its quick times are all in the future", async () => {
   const r = rig(ON, { ...SHEET_DATA, ...STATE("operator") });
   r.c.homeCard(); await later(10);
@@ -420,6 +545,91 @@ atest("every icon the tools draw exists in the page's own icon set", async () =>
   const missing = [...drawnIcons].filter((n) => !known.has(n));
   assert.ok(drawnIcons.size >= 15, "drew " + drawnIcons.size);
   assert.deepStrictEqual(missing, []);
+});
+
+test("activity duration keeps idle totals separate from rounding", () => {
+  assert.strictEqual(D.activityDuration(0), "0 min");
+  assert.strictEqual(D.activityDuration(5), "<1 min");
+  assert.strictEqual(D.activityDuration(8100), "2 h 15 min");
+});
+
+atest("Activity shows usage totals, open apps, history and selected dates", async () => {
+  const report = { enabled: true, supported: true, paused: false, error: "", date: "2026-11-25", pc_today: "2026-11-25", retention_days: 7,
+    current: { state: "idle", app: "notepad.exe", since: NOW }, open_apps: ["notepad.exe", "EXCEL.EXE"],
+    icons: { "notepad.exe": "data:image/png;base64,aWNvbg==", "EXCEL.EXE": "https://untrusted.example/icon.png", "Code.exe": "data:image/png;base64,Y29kZQ==" },
+    totals: { active: 8100, idle: 2700, locked: 0, excluded: 0, unavailable: 0 }, untracked_seconds: 60,
+    day_start: NOW - 60, day_end: NOW + 300,
+    applications: [{ name: "Code.exe", seconds: 8100 }], timeline: [{ start: NOW, end: NOW + 300, state: "active", app: "Code.exe" }],
+    events: [{ time: NOW, kind: "closed", app: "EXCEL.EXE" }] };
+  const fixture = rig(ON, { "/daily/activity": report });
+  fixture.c.openActivity(); await later();
+  try {
+    const body = fixture.sheets[0].body;
+    assert.ok(body.find(node => node.textContent === "2 h 15 min"));
+    assert.ok(body.find(node => node.textContent === "notepad.exe"));
+    assert.ok(body.find(node => node.textContent.startsWith("Idle since ")));
+    assert.strictEqual(body.all().filter(node => node.tag === "img").length, 3);
+    const logo = body.find(node => node.tag === "img");
+    assert.strictEqual(logo.props.src, report.icons["notepad.exe"]);
+    logo.fire("error");
+    assert.strictEqual(body.all().filter(node => node.tag === "img").length, 2);
+    body.find(node => node.tag === "button" && node.all().some(child => child.textContent === "Timeline")).fire("click");
+    await later();
+    assert.ok(body.find(node => node.textContent === "Not tracked"));
+    assert.ok(body.find(node => node.textContent === "Code.exe"));
+    assert.strictEqual(body.find(node => node.tag === "img").props.src, report.icons["Code.exe"]);
+    body.find(node => node.tag === "button" && node.all().some(child => child.textContent === "App events")).fire("click");
+    await later();
+    assert.ok(body.find(node => node.textContent.includes("Last window closed")));
+    const date = body.find(node => node.props["aria-label"] === "Activity date");
+    date.value = "2026-11-24"; date.onchange(); await later();
+    assert.ok(fixture.calls.some(call => call[0] === "/daily/activity?day=2026-11-24"));
+  } finally { fixture.sheets[0].close(); }
+});
+
+atest("Activity handles tracking disabled without inventing work", async () => {
+  const fixture = rig(ON, { "/daily/activity": { enabled: false, supported: true, paused: false, date: "2026-11-25", pc_today: "2026-11-25", retention_days: 7,
+    current: { state: "unavailable" }, open_apps: [], applications: [], timeline: [], events: [], totals: {}, untracked_seconds: 60 } });
+  fixture.c.openActivity(); await later();
+  try {
+    assert.ok(fixture.sheets[0].body.find(node => node.textContent.includes("Tracking is off")));
+    assert.ok(fixture.sheets[0].body.find(node => node.textContent.includes("No active usage recorded")));
+  } finally { fixture.sheets[0].close(); }
+});
+
+atest("closing an open app requires confirmation and keeps the observed row", async () => {
+  let yes = false, broken = false;
+  const questions = [];
+  const report = { enabled: true, supported: true, can_close: true, force_quit_apps: ["notepad.exe"], date: "2026-11-25", pc_today: "2026-11-25", retention_days: 7,
+    current: { state: "active", app: "notepad.exe" }, open_apps: ["notepad.exe"], applications: [], timeline: [], events: [], totals: {}, untracked_seconds: 0 };
+  const fixture = rig(ON, { "/daily/activity": report, "/daily/activity/close": () => {
+    if (broken) throw new Error("Windows refused the request");
+    return { ok: true, message: "Close requested; check the PC for a save prompt." };
+  } }, { ask: async question => { questions.push(question); return yes; } });
+  fixture.c.openActivity(); await later();
+  try {
+    const body = fixture.sheets[0].body;
+    const close = () => body.find(node => node.getAttribute("aria-label") === "Close notepad.exe").fire("click");
+    close(); await later();
+    assert.strictEqual(posts(fixture, "/daily/activity/close").length, 0);
+    assert.ok(questions[0].message.includes("all windows"));
+    yes = true; close(); await later();
+    assert.deepStrictEqual(posts(fixture, "/daily/activity/close"), [{ name: "notepad.exe", confirmed: true }]);
+    assert.ok(body.find(node => node.getAttribute("aria-label") === "Close notepad.exe"));
+    assert.ok(fixture.toasts.some(message => message.includes("save prompt")));
+    const force = () => body.find(node => node.getAttribute("aria-label") === "Force quit notepad.exe").fire("click");
+    yes = false; force(); await later();
+    assert.strictEqual(posts(fixture, "/daily/activity/close").length, 1);
+    assert.ok(questions[questions.length - 1].message.includes("Unsaved work will be lost"));
+    yes = true; force(); await later();
+    assert.deepStrictEqual(posts(fixture, "/daily/activity/close")[1], { name: "notepad.exe", confirmed: true, force: true });
+    broken = true; close(); await later();
+    assert.ok(fixture.toasts.includes("Windows refused the request"));
+    assert.ok(body.find(node => node.textContent === "notepad.exe"));
+    const date = body.find(node => node.props["aria-label"] === "Activity date");
+    report.date = "2026-11-24"; date.value = report.date; date.onchange(); await later();
+    assert.strictEqual(body.find(node => node.getAttribute("aria-label") === "Close notepad.exe"), null);
+  } finally { fixture.sheets[0].close(); }
 });
 
 Promise.all(asyncTests).then(() => {

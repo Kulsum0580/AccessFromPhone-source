@@ -4,6 +4,7 @@
 
 /* ============================================================ the control centre on Home */
 .dy-card { display: flex; flex-direction: column; gap: 16px; }
+.dy-app-icon { display: block; width: 32px; height: 32px; object-fit: contain; flex: none; }
 .dy-card .hm-head b { font-size: 1.08rem; letter-spacing: -0.02em; }
 .dy-live { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; margin-right: 6px; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
 :root:not([data-motion]) .dy-live { animation: dy-beat 2.2s ease-in-out infinite; }
@@ -72,6 +73,12 @@
 .dy { display: flex; flex-direction: column; gap: 12px; }
 .dy .seg { margin-bottom: 2px; }
 .dy .hm-sect { margin: 6px 2px -2px; }
+.dy-activity-date { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
+.dy-activity-date input { min-width: 0; width: 100%; }
+.dy-activity-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px 0; border-block: 1px solid var(--g-edge); }
+.dy-activity-total { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.dy-activity-total small { color: var(--muted); }
+.dy-activity-total b { font-size: 0.95rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; letter-spacing: 0; }
 .dy-count { display: inline-block; margin-left: 7px; min-width: 20px; padding: 0 6px; border-radius: 999px; font-style: normal; font-size: 0.72rem; font-weight: 800; line-height: 20px; color: var(--on-accent); background: linear-gradient(135deg, var(--a1), var(--a2)); }
 .dy-fine { margin: 0; font-size: 0.78rem; color: var(--muted); line-height: 1.4; overflow-wrap: anywhere; }
 .dy-lock { display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 14px; border-radius: 14px; font-size: 0.86rem; color: var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) 30%, transparent); }

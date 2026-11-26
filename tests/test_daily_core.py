@@ -273,7 +273,7 @@ class Rig:
         self.allowed = set(allowed)
 
     def kwargs(self, clock):
-        return dict(clock=clock, notify=lambda t, b, k: self.told.append((t, b, k)), run_power=lambda key: self.powered.append(key) or "ok",
+        return dict(clock=clock, notify=lambda t, b, k, **kwargs: self.told.append((t, b, k)), run_power=lambda key: self.powered.append(key) or "ok",
                     allowed_power=lambda: self.allowed, note=lambda event, **d: self.noted.append(event))
 
 
@@ -414,7 +414,7 @@ def test_a_program_finishing_is_noticed_after_it_stays_gone(db, clock):
     assert watch.tick() == []          # back again: the count starts over
     running["render.exe"] = False
     watch.tick()
-    assert watch.tick()[0]["kind"] == "process" and rig.told == [("Finished", "render.exe has finished.", "watch")]
+    assert watch.tick()[0]["kind"] == "process" and rig.told == [("Finished", "render.exe has closed.", "watch")]
     assert watch.list() == []
 
 
@@ -429,6 +429,23 @@ def test_the_list_of_running_programs_is_quick_and_biggest_first():
     assert programs and all({"name", "count", "memory_mb"} == set(p) and p["count"] >= 1 for p in programs)
     assert [p["memory_mb"] for p in programs] == sorted((p["memory_mb"] for p in programs), reverse=True)
     assert sum(p["memory_mb"] for p in programs) > 0
+
+
+def test_running_programs_can_include_low_memory_programs_beyond_the_default_limit(monkeypatch):
+    from types import SimpleNamespace
+
+    from handoff.daily import watch
+
+    programs = [
+        SimpleNamespace(info={"name": f"program-{index}.exe", "memory_info": SimpleNamespace(rss=100 * 1048576)})
+        for index in range(30)
+    ]
+    programs.append(SimpleNamespace(info={"name": "notepad.exe", "memory_info": SimpleNamespace(rss=1048576)}))
+    monkeypatch.setattr(watch, "_working_sets", lambda: {})
+    monkeypatch.setattr(watch, "psutil", SimpleNamespace(process_iter=lambda fields: programs))
+    assert len(watch.list_processes()) == 25
+    assert len(watch.list_processes(limit=None)) == 31
+    assert watch.list_processes(limit=None)[-1]["name"] == "notepad.exe"
 
 
 def test_watching_a_program_that_is_not_running_is_refused(db, clock):

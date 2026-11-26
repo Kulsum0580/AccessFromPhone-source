@@ -120,6 +120,12 @@ def _describe(event: dict) -> dict | None:
     return {"time": event.get("time", ""), "text": text, "tone": tone}
 
 
+class ActivitySettingsIn(BaseModel):
+    enabled: bool
+    paused: bool = False
+    excluded: list[str] = Field(default_factory=list, max_length=100)
+
+
 def create_admin_app(settings: Settings, accounts: AccountStore, manager: JobManager, anywhere: Anywhere | None = None) -> FastAPI:
     app = FastAPI(title="AccessFromPhone (this PC)", docs_url=None, redoc_url=None, openapi_url=None)
     sessions: dict[str, float] = {}
@@ -248,6 +254,33 @@ def create_admin_app(settings: Settings, accounts: AccountStore, manager: JobMan
     def pause_state() -> dict:
         """Whether phone access is paused, and by whom."""
         return manager.pause_switch.info()
+
+    def activity_tracker():
+        tracker = getattr(manager, "activity_tracker", None)
+        if tracker is None or not settings.daily.enabled:
+            raise HTTPException(status_code=404, detail="Activity tracking is unavailable.")
+        return tracker
+
+    @app.get("/admin/usage", dependencies=[Depends(need_session)])
+    def activity_status() -> dict:
+        return activity_tracker().status()
+
+    @app.post("/admin/usage", dependencies=[Depends(need_session)])
+    def activity_configure(body: ActivitySettingsIn) -> dict:
+        if any(len(name) > 260 or any(char in name for char in "\r\n/\\") for name in body.excluded):
+            raise HTTPException(status_code=422, detail="Use application names, such as notepad.exe.")
+        tracker = activity_tracker()
+        if body.enabled and not tracker.supported:
+            raise HTTPException(status_code=409, detail="Activity tracking requires Windows.")
+        result = tracker.configure(enabled=body.enabled, paused=body.paused, excluded=body.excluded)
+        manager.note("activity_tracking_changed", enabled=body.enabled, paused=body.paused)
+        return result
+
+    @app.delete("/admin/usage", dependencies=[Depends(need_session)])
+    def activity_clear() -> dict:
+        activity_tracker().clear()
+        manager.note("activity_history_deleted")
+        return {"ok": True}
 
     @app.post("/admin/pause/start", dependencies=[Depends(need_session)])
     def pause_start() -> dict:

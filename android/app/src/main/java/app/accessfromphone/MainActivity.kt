@@ -28,6 +28,7 @@ import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
 import android.webkit.SslErrorHandler
 import android.webkit.URLUtil
+import android.webkit.ValueCallback
 import android.webkit.JsResult
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
@@ -70,7 +71,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var saved: SavedChats
     private var shim = ""
     private var micAnswer: ((Boolean) -> Unit)? = null
+    private var fileAnswer: ValueCallback<Array<Uri>>? = null
     private val io = Executors.newSingleThreadExecutor()
+
+    private val filePicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val answer = fileAnswer
+        fileAnswer = null
+        answer?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data))
+    }
 
     private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
         micAnswer?.invoke(ok)
@@ -245,6 +253,24 @@ class MainActivity : AppCompatActivity() {
             }
         }
         web.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(view: WebView, callback: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
+                fileAnswer?.onReceiveValue(null)
+                fileAnswer = null
+                if (!isPaired(view.url) || isFinishing) {
+                    callback.onReceiveValue(null)
+                    return true
+                }
+                fileAnswer = callback
+                try {
+                    filePicker.launch(params.createIntent())
+                } catch (_: android.content.ActivityNotFoundException) {
+                    fileAnswer = null
+                    callback.onReceiveValue(null)
+                    Toast.makeText(this@MainActivity, "No file picker is available on this phone.", Toast.LENGTH_LONG).show()
+                }
+                return true
+            }
+
             // Without these, a WebView silently answers "no" to every confirm() (and the page's "Close without saving?" or "Sign out?" could never be agreed to).
             override fun onJsConfirm(view: WebView, url: String, message: String, result: JsResult): Boolean {
                 if (isFinishing) { result.cancel(); return true }
@@ -289,6 +315,8 @@ class MainActivity : AppCompatActivity() {
                 localPages.shouldInterceptRequest(request.url)
 
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+                fileAnswer?.onReceiveValue(null)
+                fileAnswer = null
                 pcPage = isPaired(url)
                 loading.visibility = View.VISIBLE
                 if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT) && isPaired(url)) view.evaluateJavascript(shim, null)
@@ -839,6 +867,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         if (current === this) current = null
+        fileAnswer?.onReceiveValue(null)
+        fileAnswer = null
         speech.release()
         tts.release()
         finder.stop()

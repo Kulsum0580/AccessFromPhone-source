@@ -150,6 +150,21 @@ def test_the_icon_colour_follows_what_is_happening():
     assert desktop.tray_state(True, 0, True) == ("ok", True)  # or the relay is
 
 
+def test_tray_usage_indicator_follows_recording_and_privacy_pause():
+    status = dict(enabled=False, paused=False, suspended=False, supported=True, error="")
+    daily = types.SimpleNamespace(cfg=types.SimpleNamespace(enabled=True), activity=types.SimpleNamespace(status=lambda: status))
+    tray = object.__new__(desktop.Tray)
+    tray._running = types.SimpleNamespace(app=types.SimpleNamespace(state=types.SimpleNamespace(daily=daily)))
+    assert tray._usage_text() == "Usage tracking off"
+    status["enabled"] = True
+    assert tray._usage_text() == "Usage recording on"
+    status["suspended"] = True
+    assert tray._usage_text() == "Usage recording paused"
+    status["suspended"] = False
+    status["error"] = "Unavailable"
+    assert tray._usage_text() == "Usage tracking unavailable"
+
+
 def test_a_new_phone_is_announced_once_and_a_blocked_one_never():
     seen = {"a"}
     devices = [{"id": "a", "name": "Old", "blocked": False}, {"id": "b", "name": "Afza's iPhone", "blocked": False}, {"id": "c", "name": "Bad", "blocked": True}]

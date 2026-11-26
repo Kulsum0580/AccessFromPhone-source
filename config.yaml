@@ -59,7 +59,7 @@ daily:                                     # everyday tools on the phone's Home 
   max_upload_mb: 100                       # the largest file the phone may send to the inbox
   printing: true                           # print a file on this PC's default printer (each print is confirmed on the phone and logged)
   notifications: false                     # show this PC's Windows notifications on the phone. Off by default: they can hold private messages
-  webcam: false                            # let the Admin phone take one photo with the webcam (needs: pip install opencv-python). Logged, and every phone is told
+  webcam: true                             # let the Admin phone take one photo with the webcam (needs: pip install opencv-python). Logged, and every phone is told
 
 agent:
   allowed_folders:

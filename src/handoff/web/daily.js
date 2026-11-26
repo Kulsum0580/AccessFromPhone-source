@@ -154,6 +154,12 @@
   /* What a request that failed should say, using the PC's own words when it gave some. */
   function errorText(e) { return (e && e.message) ? e.message : "That didn't work."; }
 
+  function activityDuration(seconds) {
+    var minutes = Math.floor(Math.max(0, seconds || 0) / 60);
+    if (seconds > 0 && minutes === 0) return "<1 min";
+    return minutes >= 60 ? Math.floor(minutes / 60) + " h " + (minutes % 60) + " min" : minutes + " min";
+  }
+
   /* ---------------------------------------------------------------- the component  */
 
   function create(d) {
@@ -179,7 +185,7 @@
     function done(where) { d.haptic("success"); if (Ux()) Ux().burst(where); }
 
     function button(icon, label, onclick, cls) {
-      return h("button", { class: "btn " + (cls || ""), type: "button", onclick: onclick }, icon ? ico(icon) : null, label ? h("span", { text: label }) : null);
+      return h("button", { class: "btn " + (cls || ""), type: "button", onclick: function (event) { tick("light"); return onclick(event); } }, icon ? ico(icon) : null, label ? h("span", { text: label }) : null);
     }
     function lockedNote(needed, what) {
       if (may(needed)) return h("span", { hidden: true });   // (a real node: the sheets fill themselves with replaceChildren, which would print a null as the word "null")
@@ -194,12 +200,21 @@
     /* ---- one row, in the same shape everywhere: an icon tile, a title and a line under it, and whatever belongs on the right ---- */
     function tile(iconName, kind) { return h("span", { class: "dy-ric k-" + (kind || "file") }, ico(iconName)); }
 
+    function applicationTile(name, icons) {
+      var node = tile("cpu"), source = icons && icons[name];
+      if (typeof source === "string" && /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(source)) {
+        node.replaceChildren(h("img", { class: "dy-app-icon", src: source, alt: "", width: "32", height: "32", decoding: "async",
+          onerror: function () { node.replaceChildren(ico("cpu")); } }));
+      }
+      return node;
+    }
+
     function row(o) {
       var node = h(o.onTap ? "button" : "div", { class: "dy-row spot" + (o.onTap ? " is-tap" : ""), type: o.onTap ? "button" : undefined, onclick: o.onTap ? function () { tick("light"); o.onTap(); } : undefined },
         o.tileNode || tile(o.icon, o.kind),
         h("div", { class: "dy-rtx" }, h("b", { text: o.title }), o.sub ? h("small", { text: o.sub }) : null, o.below || null),
         o.trail || null);
-      if (o.swipe && Ux()) return Ux().swipe(node, { label: o.swipe.label || "Delete", onDelete: o.swipe.onDelete, tick: tick });
+      if (o.swipe && Ux()) return Ux().swipe(node, { label: o.swipe.label || "Delete", icon: o.swipe.icon, onDelete: o.swipe.onDelete, onAction: o.swipe.onAction, tick: tick });
       return node;
     }
 
@@ -248,7 +263,7 @@
     function paintCounts(card) {
       if (!card || !st.counts) return;
       var put = function (key, n) { var el = card.querySelector('[data-badge="' + key + '"]'); if (el) { el.textContent = n > 0 ? String(n) : ""; el.hidden = !(n > 0); } };
-      put("inbox", (st.counts.in_inbox || 0) + (st.counts.to_phone || 0));
+      put("inbox", st.counts.in_inbox || 0);
       put("tasks", st.counts.tasks || 0);
       put("watch", st.counts.watchers || 0);
     }
@@ -338,7 +353,7 @@
     }
 
     var TOOLS = [
-      ["inbox", "inbox", "Inbox", "inbox"], ["notes", "note", "Notes", ""], ["tasks", "clock", "Remind", "tasks"], ["watch", "eye", "Watch", "watch"],
+      ["inbox", "inbox", "Send to PC", "inbox"], ["notes", "note", "Notes", ""], ["tasks", "clock", "Remind", "tasks"], ["watch", "eye", "Watch", "watch"],
       ["recent", "star", "Recent", ""], ["snap", "camera", "Snap", ""], ["print", "printer", "Print", ""], ["pcnotes", "bell", "PC alerts", ""], ["brief", "sparkle", "Briefing", ""],
     ];
 
@@ -369,12 +384,13 @@
     /* ================================================================ sheets */
 
     /* A sheet that shows loading shapes, fills itself from the PC, can be pulled down to refresh, and says what went wrong in words. */
-    function sheetOf(title, route, fill, skeleton) {
+    function sheetOf(title, route, fill, skeleton, cleanup, onClose) {
       var body = h("div", { class: "dy" });
       var handle = { body: body, pull: null };
-      var sheet = d.openSheet({ title: title, body: body, route: route, onClose: function () { if (handle.pull) handle.pull.stop(); } });
+      var sheet = d.openSheet({ title: title, body: body, route: route, onClose: function () { if (handle.pull) handle.pull.stop(); if (cleanup) cleanup(); if (onClose) onClose(); } });
       handle.sheet = sheet;
       var refill = function () {
+        if (cleanup) cleanup();
         return Promise.resolve(fill(body, refill, sheet)).catch(function (e) {
           if (e && e.code === 401) return;
           body.replaceChildren(emptyState("remind", "That didn't load", errorText(e), button("retry", "Try again", refill, "primary sm")));
@@ -437,7 +453,7 @@
 
     function uploadRow(file) {
       var bar = h("i", { class: "dy-prog-bar" }), meta = h("small", { text: sizeText(file.size) });
-      var cancel = h("button", { class: "iconbtn dy-x", type: "button", "aria-label": "Cancel " + file.name }, ico("x"));
+      var cancel = h("button", { class: "iconbtn dy-x", type: "button", "aria-label": "Cancel " + file.name, "data-haptic": "tick" }, ico("x"));
       var node = h("div", { class: "dy-row dy-up is-wait", role: "group", "aria-label": file.name },
         tile(KIND_ICON[kindOf(file.name)], kindOf(file.name)),
         h("div", { class: "dy-rtx" }, h("b", { text: file.name }), h("div", { class: "dy-prog", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": "0" }, bar), meta), cancel);
@@ -445,44 +461,28 @@
     }
 
     function openInbox() {
-      var tab = "pc", queue = [], running = 0, uploads = h("div", { class: "dy-uploads" }), sh = null;
-      sh = sheetOf("Inbox", "daily-inbox", function (body, refill) {
+      var queue = [], running = 0, uploads = h("div", { class: "dy-uploads" }), sh = null;
+      sh = sheetOf("Send to PC", "daily-inbox", function (body, refill) {
         return call("/inbox").then(function (data) {
-          var f = info() || {};
-          var seg = h("div", { class: "seg", role: "group", "aria-label": "Direction" },
-            [["pc", "To the PC", data.to_pc.length], ["phone", "To this phone", data.to_phone.length]].map(function (t) {
-              return h("button", { type: "button", "aria-pressed": String(tab === t[0]), onclick: function () { tab = t[0]; refill(); } }, t[1], t[2] ? h("i", { class: "dy-count", text: String(t[2]) }) : null);
-            }));
-          var kids = [seg];
-          if (tab === "pc") {
-            var box = h("textarea", { class: "dy-text", rows: "2", placeholder: "Paste text or a link to send to the PC", "aria-label": "Text to send to the PC", maxlength: "20000" });
-            var grow = function () { box.style.height = "auto"; box.style.height = Math.min(160, box.scrollHeight) + "px"; };
-            box.addEventListener("input", grow);
-            var file = h("input", { type: "file", multiple: true, hidden: true });
-            var sendBtn = null;
-            var sendText = function () {
-              var text = box.value.trim(); if (!text) { box.focus(); return; }
-              call("/inbox/text", "POST", { text: text }).then(function () { done(sendBtn); box.value = ""; grow(); refill(); }).catch(fail);
-            };
-            sendBtn = button("arrowUp", "Send", sendText, "primary sm");
-            var attach = button("file", "Choose files…", function () { file.click(); }, "ghost sm");
-            file.onchange = function () { enqueue(Array.prototype.slice.call(file.files || [])); file.value = ""; };
-            var compose = h("div", { class: "dy-compose" }, box, h("div", { class: "dy-actions" }, attach, h("span", { class: "grow" }), sendBtn, file));
-            kids.push(lockedNote("editor", "Sending"), may("editor") ? compose : null, uploads);
-            if (!data.to_pc.length && !uploads.childNodes.length) kids.push(emptyState("inbox", "Nothing sent yet", "Text, links and files you send show up here, and files land in " + data.folders.inbox + " on the PC. On a tablet or computer you can drag files onto this sheet."));
-            else if (data.to_pc.length) kids.push(swipeHint());
-            data.to_pc.forEach(function (item) { kids.push(inboxRow(item, body, refill)); });
-          } else {
-            kids.push(h("div", { class: "dy-path" }, ico("folder"), h("span", { text: data.folders.to_phone }), button("copy", "", function () { d.copy(data.folders.to_phone); }, "iconbtn")));
-            if (!data.to_phone.length) kids.push(emptyState("inbox", "No files waiting", "Put a file in that folder on the PC and it appears here to save."));
-            data.to_phone.forEach(function (fl) {
-              var k = kindOf(fl.name);
-              kids.push(row({ icon: KIND_ICON[k], kind: k, title: fl.name, sub: sizeText(fl.size) + " · " + agoText(fl.time) + (fl.risky ? " · program: be careful" : ""),
-                trail: button("download", "Save", function () { saveFrom("/daily/tophone/file?name=" + encodeURIComponent(fl.name), fl.name); }, "sm") }));
-            });
-          }
+          var kids = [];
+          var box = h("textarea", { class: "dy-text", rows: "2", placeholder: "Paste text or a link to send to the PC", "aria-label": "Text to send to the PC", maxlength: "20000" });
+          var grow = function () { box.style.height = "auto"; box.style.height = Math.min(160, box.scrollHeight) + "px"; };
+          box.addEventListener("input", grow);
+          var file = h("input", { type: "file", multiple: true, hidden: true });
+          var sendBtn = null;
+          var sendText = function () {
+            var text = box.value.trim(); if (!text) { box.focus(); return; }
+            call("/inbox/text", "POST", { text: text }).then(function () { done(sendBtn); box.value = ""; grow(); refill(); }).catch(fail);
+          };
+          sendBtn = button("arrowUp", "Send", sendText, "primary sm");
+          var attach = button("file", "Choose files…", function () { file.click(); }, "ghost sm");
+          file.onchange = function () { enqueue(Array.prototype.slice.call(file.files || [])); file.value = ""; };
+          var compose = h("div", { class: "dy-compose" }, box, h("div", { class: "dy-actions" }, attach, h("span", { class: "grow" }), sendBtn, file));
+          kids.push(lockedNote("editor", "Sending"), may("editor") ? compose : null, uploads);
+          if (!data.to_pc.length && !uploads.childNodes.length) kids.push(emptyState("inbox", "Nothing sent yet", data.folders.inbox));
+          else if (data.to_pc.length) kids.push(swipeHint());
+          data.to_pc.forEach(function (item) { kids.push(inboxRow(item, body, refill)); });
           put(body, kids);
-          void f;
         });
       }, "row");
 
@@ -542,7 +542,6 @@
         host.addEventListener("drop", function (e) {
           if (!has(e)) return;
           e.preventDefault(); over = 0; host.classList.remove("is-drop");
-          if (tab !== "pc") { tab = "pc"; sh.refill(); }
           enqueue(Array.prototype.slice.call(e.dataTransfer.files || []));
         });
       }
@@ -574,6 +573,7 @@
     /* ---- notes, with dictation ---- */
 
     function openNotes() {
+      var cleanup = function () {};
       sheetOf("Notes", "daily-notes", function (body, refill) {
         return call("/notes").then(function (data) {
           var field = h("textarea", { class: "dy-text", rows: "3", placeholder: "A note or a to-do. Speak or type.", "aria-label": "Note", maxlength: "5000" });
@@ -581,11 +581,28 @@
           var wave = h("span", { class: "dy-wave", "aria-hidden": "true" }, [0, 1, 2, 3, 4].map(function (i) { return h("i", { style: "animation-delay:" + (i * 0.12) + "s" }); }));
           var mic = h("button", { class: "dy-mic", type: "button", "aria-label": "Dictate" }, ico("mic"), wave);
           var stopMic = function () { listening = false; mic.classList.remove("on"); mic.setAttribute("aria-label", "Dictate"); };
+          cleanup = function () { if (listening) { stopMic(); d.speech.abort(); } };
           mic.onclick = function () {
             if (!d.speech || d.speech.status() !== "ok") { d.toast("Dictation needs a secure (https) connection and a browser that supports it. You can type instead."); return; }
             if (listening) { d.speech.stop().then(function (t) { field.value = t ? (baseText + " " + t).trim() : field.value; }); stopMic(); return; }
             baseText = field.value.trim(); listening = true; mic.classList.add("on"); mic.setAttribute("aria-label", "Stop dictating"); d.haptic("light");
-            var res = d.speech.start(d.lang(), { text: function (t) { field.value = (baseText + " " + t).trim(); }, error: function () { stopMic(); d.toast("The microphone isn't available."); } });
+            var res = d.speech.start(d.lang(), {
+              text: function (text) { if (listening) field.value = (baseText + " " + text).trim(); },
+              finished: stopMic,
+              error: function (error) {
+                if (!listening || error === "no-speech") return;
+                cleanup();
+                if (error === "aborted") return;
+                var messages = {
+                  "not-allowed": "Microphone permission is blocked. Allow it in your phone's app or browser settings.",
+                  "service-not-allowed": "Speech recognition is disabled on this phone. Check its speech service settings.",
+                  "audio-capture": "The microphone could not start. Check microphone access and close other recording apps.",
+                  "network": "Speech recognition could not connect. Check your phone's internet connection and try again.",
+                  "language-not-supported": "Speech recognition is not available in this language. Choose another language in Settings."
+                };
+                d.toast(messages[error] || "Dictation stopped. Tap the microphone to try again.");
+              }
+            });
             if (res !== "ok") { stopMic(); d.toast("Dictation isn't available here."); }
           };
           var todo = h("button", { class: "dy-chip", type: "button", "aria-pressed": "false", onclick: function () { isTodo = !isTodo; todo.setAttribute("aria-pressed", String(isTodo)); tick("tick"); } }, ico("check"), h("span", { text: "To-do" }));
@@ -604,7 +621,7 @@
           });
           put(body, kids);
         });
-      }, "card");
+      }, "card", function () { cleanup(); });
     }
 
     /* ---- reminders and scheduled actions ---- */
@@ -699,8 +716,24 @@
         if (type === "process") {
           picker.replaceChildren(Ux() ? Ux().skeleton("row", 1) : h("p", { class: "note", text: "Loading programs…" }));
           call("/processes").then(function (out) {
-            picker.replaceChildren(h("small", { class: "dy-label", text: "Tell me when this program stops running" }), chips(out.processes.slice(0, 14).map(function (p) { return { value: p.name, label: p.name + (p.count > 1 ? " ×" + p.count : "") }; }), target, function (v) { target = v; fillPicker(); }, "is-wrap"));
-          }).catch(function (e) { picker.replaceChildren(h("p", { class: "err", text: errorText(e) })); });
+            if (type !== "process") return;
+            var programs = out.processes.slice().sort(function (first, second) { return first.name.localeCompare(second.name); });
+            if (!programs.some(function (program) { return program.name === target; })) target = "";
+            var search = h("input", { class: "text-input", type: "search", placeholder: "Search programs", "aria-label": "Search programs" });
+            var select = h("select", { class: "text-input", "aria-label": "Program to watch" });
+            var paintPrograms = function () {
+              var query = search.value.trim().toLowerCase();
+              var matches = programs.filter(function (program) { return program.name === target || program.name.toLowerCase().includes(query); });
+              select.replaceChildren(h("option", { value: "", text: matches.length ? "Choose a program" : "No matching programs" }));
+              matches.forEach(function (program) { select.append(h("option", { value: program.name, text: program.name + (program.count > 1 ? " ×" + program.count : "") })); });
+              select.value = target;
+            };
+            search.oninput = paintPrograms;
+            select.onchange = function () { target = select.value; };
+            paintPrograms();
+            picker.replaceChildren(h("small", { class: "dy-label", text: "Tell me when this program stops running" }), search, select,
+              button("retry", "Refresh programs", fillPicker, "sm"));
+          }).catch(function (e) { if (type === "process") picker.replaceChildren(h("p", { class: "err", text: errorText(e) })); });
         } else if (type === "folder") {
           picker.replaceChildren(h("small", { class: "dy-label", text: "Tell me when a new file finishes arriving in" }), chips(data.places.map(function (p) { return { value: p.path, label: p.name, icon: "folder" }; }), target, function (v) { target = v; fillPicker(); }, "is-wrap"));
         } else {
@@ -895,6 +928,94 @@
     }
     var toneOf = function (p, warn, bad) { return p >= bad ? "bad" : p >= warn ? "warn" : "ok"; };
 
+    function openActivity() {
+      var day = "", mode = "summary", timer = null, closed = false, sequence = 0, pendingClose = false;
+      var closeAttempted = Object.create(null);
+      var clockText = function (stamp) { return new Date(stamp * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); };
+      var stateText = function (state) { return { active: "Active", idle: "Idle", locked: "Locked", excluded: "Excluded app", unavailable: "Unavailable" }[state] || state; };
+      sheetOf("PC activity", "daily-activity", function (body, refill) {
+        var request = ++sequence;
+        return call("/activity" + (day ? "?day=" + encodeURIComponent(day) : "")).then(function (report) {
+          if (closed || request !== sequence) return;
+          day = report.date;
+          var dateInput = h("input", { type: "date", class: "text-input", value: day, max: report.pc_today, "aria-label": "Activity date" });
+          var earliest = new Date(report.pc_today + "T12:00:00"); earliest.setDate(earliest.getDate() - report.retention_days);
+          dateInput.min = earliest.getFullYear() + "-" + String(earliest.getMonth() + 1).padStart(2, "0") + "-" + String(earliest.getDate()).padStart(2, "0");
+          dateInput.onchange = function () { if (dateInput.value) { day = dateInput.value; refill(); } };
+          var refresh = button("retry", "", refill, "dy-act"); refresh.title = "Refresh activity"; refresh.setAttribute("aria-label", "Refresh activity");
+          var kids = [h("div", { class: "dy-activity-date" }, dateInput, refresh),
+            h("p", { class: "dy-fine", role: "status", text: !report.supported ? "Unavailable on this PC" : !report.enabled ? "Tracking is off. Enable Usage tracking on the PC's owner page." : report.paused || report.suspended ? "Recording paused on the PC" : "Recording application usage" })];
+          if (report.error) kids.push(h("p", { class: "err", text: report.error }));
+          kids.push(chips([{ value: "summary", label: "Summary" }, { value: "timeline", label: "Timeline" }, { value: "events", label: "App events" }], mode, function (value) { mode = value; refill(); }));
+          if (mode === "summary") {
+            kids.push(h("div", { class: "dy-activity-totals" }, ["active", "idle", "locked"].map(function (key) {
+              return h("div", { class: "dy-activity-total" }, h("small", { text: stateText(key) }), h("b", { text: activityDuration(report.totals[key]) }));
+            })));
+            kids.push(h("p", { class: "dy-fine", text: "Not tracked: " + activityDuration(report.untracked_seconds) + " · Excluded: " + activityDuration(report.totals.excluded) + " · Unavailable: " + activityDuration(report.totals.unavailable) }));
+            if (day === report.pc_today) {
+              kids.push(h("div", { class: "hm-sect" }, h("b", { text: "Now" })));
+              kids.push(row({ tileNode: applicationTile(report.current.app, report.icons), title: report.current.app || stateText(report.current.state), sub: stateText(report.current.state) + (report.current.since ? " since " + clockText(report.current.since) : " · No current sample") }));
+              kids.push(h("div", { class: "hm-sect" }, h("b", { text: "Open applications" })));
+              report.open_apps.forEach(function (name) {
+                var closeApp = function (force) {
+                  force = force === true;
+                  if (pendingClose || closed) return Promise.resolve();
+                  pendingClose = true;
+                  var submitted = false;
+                  return confirm((force ? "Force quit " : "Close ") + name + "?", force ? "Immediately terminate this application's open processes. Unsaved work will be lost, and this cannot be undone." : "Request a normal close for all windows of this application. Unsaved work may need a response on the PC. The application will not be force-quit.", force ? "Force quit" : "Close application", "danger")
+                    .then(function (yes) {
+                      if (!yes || closed) return;
+                      submitted = true;
+                      var payload = { name: name, confirmed: true };
+                      if (force) payload.force = true;
+                      return call("/activity/close", "POST", payload).then(function (out) {
+                        closeAttempted[name] = !force;
+                        d.toast(out.message); if (!closed) return refill();
+                      });
+                    }).catch(function (error) {
+                      fail(error);
+                      if (submitted && !closed) { closeAttempted[name] = true; return refill(); }
+                    }).finally(function () { pendingClose = false; });
+                };
+                var protectedApp = (report.protected_apps || []).indexOf(name) !== -1;
+                var closeButton = report.can_close && !protectedApp ? button("x", "", closeApp, "iconbtn swp-noswipe") : null;
+                if (closeButton) { closeButton.title = "Close " + name; closeButton.setAttribute("aria-label", "Close " + name); closeButton.setAttribute("data-haptic", "medium"); }
+                var forceButton = closeButton && closeAttempted[name] && (report.force_quit_apps || []).indexOf(name) !== -1 ? button("power", "", function () { return closeApp(true); }, "iconbtn swp-noswipe") : null;
+                if (forceButton) { forceButton.title = "Force quit " + name; forceButton.setAttribute("aria-label", "Force quit " + name); forceButton.setAttribute("data-haptic", "heavy"); }
+                kids.push(row({ tileNode: applicationTile(name, report.icons), title: name, sub: protectedApp ? "Windows component" : closeAttempted[name] ? "Close attempted; still open" : null,
+                  trail: forceButton ? h("div", { class: "dy-actions" }, closeButton, forceButton) : closeButton,
+                  swipe: closeButton ? { label: "Close", icon: "close", onAction: closeApp } : null }));
+              });
+              if (!report.open_apps.length) kids.push(h("p", { class: "dy-fine", text: "No application windows observed" }));
+            }
+            kids.push(h("div", { class: "hm-sect" }, h("b", { text: "Active time by application" })));
+            report.applications.forEach(function (app) { kids.push(row({ tileNode: applicationTile(app.name, report.icons), title: app.name, trail: h("span", { class: "dy-when", text: activityDuration(app.seconds) }) })); });
+            if (!report.applications.length) kids.push(h("p", { class: "dy-fine", text: "No active usage recorded for this date" }));
+          } else if (mode === "timeline") {
+            var timeline = [], cursor = report.day_start;
+            report.timeline.forEach(function (span) {
+              if (span.start > cursor) timeline.push({ start: cursor, end: span.start, state: "untracked", app: "" });
+              timeline.push(span); cursor = span.end;
+            });
+            if (cursor < report.day_end) timeline.push({ start: cursor, end: report.day_end, state: "untracked", app: "" });
+            timeline.forEach(function (span) { kids.push(row({ tileNode: span.app ? applicationTile(span.app, report.icons) : null, icon: "clock", title: span.app || (span.state === "untracked" ? "Not tracked" : stateText(span.state)),
+              sub: clockText(span.start) + " - " + clockText(span.end), trail: h("span", { class: "dy-when", text: activityDuration(span.end - span.start) }) })); });
+          } else {
+            report.events.slice().reverse().forEach(function (event) { kids.push(row({ tileNode: applicationTile(event.app, report.icons), title: event.app,
+              sub: { opened: "Window appeared", closed: "Last window closed", observed: "Already open when tracking began" }[event.kind] + " · " + clockText(event.time) })); });
+            if (!report.events.length) kids.push(h("p", { class: "dy-fine", text: "No application events recorded for this date" }));
+          }
+          kids.push(h("p", { class: "dy-fine", text: "Estimated from five-second samples. Idle: no input for 60 seconds. App events describe window observations, not completed work. Times use your phone's timezone; dates use the PC's calendar." }));
+          put(body, kids);
+          if (!timer) timer = setInterval(function () {
+            if (pendingClose || body.querySelector(".swp.is-open, .swp.is-dragging")) return;
+            if (typeof document !== "undefined" && (document.hidden || (body.contains(document.activeElement) && document.activeElement.tagName === "INPUT"))) return;
+            refill();
+          }, 10000);
+        });
+      }, "row", null, function () { closed = true; clearInterval(timer); });
+    }
+
     function openBriefing() {
       sheetOf("Briefing", "daily-brief", function (body) {
         return call("/briefing").then(function (b) {
@@ -906,6 +1027,11 @@
             if (typeof s.cpu_percent === "number") stats.push(ring(s.cpu_percent, toneOf(s.cpu_percent, 70, 90), s.cpu_percent + "%", "Processor"));
           }
           var kids = [];
+          if (b.activity) {
+            var activity = b.activity;
+            kids.push(button("clock", "PC activity", openActivity, "block"));
+            kids.push(h("p", { class: "dy-fine", text: activity.enabled ? "Today: " + activityDuration(activity.totals.active) + " active · " + activityDuration(activity.totals.idle) + " idle" : "Usage tracking is off on the PC" }));
+          }
           if (stats.length) kids.push(h("div", { class: "dy-stats" }, stats));
           if (s.available && s.uptime_s) kids.push(h("div", { class: "dy-uptime" }, ico("clock"), h("span", { text: "Up for " + uptimeText(s.uptime_s) })));
           kids.push(h("div", { class: "dy-lines" }, b.lines.map(function (l) { return h("p", {}, ico("sparkle"), h("span", { text: l })); })));
@@ -928,12 +1054,12 @@
     }
 
     return { sync: sync, homeCard: homeCard, openInbox: openInbox, openNotes: openNotes, openTasks: openTasks, openWatch: openWatch, openRecent: openRecent,
-             openPrint: openPrint, openSnap: openSnap, openBriefing: openBriefing, openPcNotices: openPcNotices, printFile: printFile, enabled: function () { return !!info(); } };
+             openPrint: openPrint, openSnap: openSnap, openBriefing: openBriefing, openActivity: openActivity, openPcNotices: openPcNotices, printFile: printFile, enabled: function () { return !!info(); } };
   }
 
   var api = { create: create, sizeText: sizeText, whenText: whenText, agoText: agoText, inText: inText, repeatText: repeatText, powerText: powerText, powerShort: powerShort,
               quickTimes: quickTimes, inputToTs: inputToTs, tsToInput: tsToInput, taskText: taskText, watchText: watchText, printable: printable, kindOf: kindOf,
-              groupNotes: groupNotes, dayText: dayText, errorText: errorText, speedText: speedText, etaText: etaText, percent: percent, uptimeText: uptimeText };
+              groupNotes: groupNotes, dayText: dayText, errorText: errorText, speedText: speedText, etaText: etaText, percent: percent, uptimeText: uptimeText, activityDuration: activityDuration };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.AfpDaily = api;
 })(typeof window !== "undefined" ? window : this);

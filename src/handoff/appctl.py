@@ -28,10 +28,112 @@ from pathlib import Path
 from typing import Callable
 
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+PROTECTED_CLOSE_APPS = frozenset({"dwm.exe", "winlogon.exe", "logonui.exe", "lockapp.exe",
+    "shellexperiencehost.exe", "startmenuexperiencehost.exe", "csrss.exe", "lsass.exe", "services.exe", "smss.exe", "wininit.exe", "svchost.exe"})
 
 
 class AppError(Exception):
     """Something the person can act on; the message says what."""
+
+
+def request_close(name: str, *, force: bool = False) -> int:
+    import ctypes
+    from ctypes import wintypes
+    import psutil
+
+    if not re.fullmatch(r"[^\\/:\x00-\x1f]{1,250}\.exe", name, re.IGNORECASE):
+        raise AppError("Select an executable name from the open-app list.")
+    if name.casefold() in PROTECTED_CLOSE_APPS:
+        raise AppError("This is a protected Windows component, not a closable application.")
+    shell_app = name.casefold() == "explorer.exe"
+    if force and name.casefold() in {"explorer.exe", "applicationframehost.exe"}:
+        raise AppError("Windows shell and shared app hosts cannot be force-quit. Use normal Close for their application windows.")
+    if sys.platform != "win32":
+        raise AppError("Closing applications requires Windows.")
+    try:
+        protected_ids = {os.getpid(), *(process.pid for process in psutil.Process(os.getpid()).parents())}
+    except psutil.Error:
+        raise AppError("Could not check which processes are safe to close.") from None
+    user = ctypes.WinDLL("user32", use_last_error=True)
+    user.OpenInputDesktop.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    user.OpenInputDesktop.restype = wintypes.HANDLE
+    user.CloseDesktop.argtypes = (wintypes.HANDLE,)
+    desktop = user.OpenInputDesktop(0, False, 1)
+    if not desktop:
+        raise AppError("Unlock the PC before closing an application.")
+    user.CloseDesktop(desktop)
+    user.IsWindowVisible.argtypes = (wintypes.HWND,)
+    user.GetWindow.argtypes = (wintypes.HWND, wintypes.UINT)
+    user.GetWindow.restype = wintypes.HWND
+    user.GetClassNameW.argtypes = (wintypes.HWND, wintypes.LPWSTR, ctypes.c_int)
+    user.GetWindowThreadProcessId.argtypes = (wintypes.HWND, ctypes.POINTER(wintypes.DWORD))
+    user.PostMessageW.argtypes = (wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
+    callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    windows = []
+    processes = {}
+    refused = []
+
+    @callback_type
+    def visit(window, context):
+        if not user.IsWindowVisible(window):
+            return True
+        owner = user.GetWindow(window, 4)
+        if owner and user.IsWindowVisible(owner):
+            return True
+        if shell_app:
+            class_name = ctypes.create_unicode_buffer(256)
+            user.GetClassNameW(window, class_name, len(class_name))
+            if class_name.value not in {"CabinetWClass", "ExploreWClass"}:
+                return True
+        process_id = wintypes.DWORD()
+        user.GetWindowThreadProcessId(window, ctypes.byref(process_id))
+        try:
+            process = psutil.Process(process_id.value)
+            if process.name().casefold() == name.casefold():
+                if process_id.value in protected_ids and not shell_app:
+                    refused.append("This process runs AccessFromPhone or its terminal. Closing it would disconnect your phone.")
+                    return True
+                windows.append((window, process_id.value))
+                processes[process_id.value] = process
+        except psutil.Error:
+            pass
+        return True
+
+    user.EnumWindows.argtypes = (callback_type, wintypes.LPARAM)
+    if not user.EnumWindows(visit, 0):
+        raise AppError("Windows could not list the application's windows.")
+    if force and refused:
+        raise AppError(refused[-1])
+    sent = 0
+    killed = []
+    for window, expected_pid in windows:
+        process_id = wintypes.DWORD()
+        user.GetWindowThreadProcessId(window, ctypes.byref(process_id))
+        if process_id.value != expected_pid:
+            continue
+        if force:
+            process = processes.pop(expected_pid, None)
+            if process is None:
+                continue
+            try:
+                process.kill()
+                killed.append(process)
+            except psutil.NoSuchProcess:
+                pass
+            except psutil.AccessDenied:
+                refused.append("Windows denied permission to force-quit this app. Close it on the PC; phone access cannot override administrator protection.")
+        elif user.PostMessageW(window, 0x0010, 0, 0):
+            sent += 1
+        else:
+            refused.append("Windows refused the close request. An elevated app must be closed on the PC.")
+    if force:
+        gone, alive = psutil.wait_procs(killed, timeout=2)
+        if alive or refused:
+            raise AppError(refused[-1] if refused else "The app has not exited yet. Refresh Activity to check its status.")
+        sent = len(gone)
+    if not sent:
+        raise AppError(refused[-1] if refused else "No closable window remains for this app. Refresh Activity; it may have already closed.")
+    return sent
 
 
 # ---------------------------------------------------------------------------------------------------------------- the Start menu

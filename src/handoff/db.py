@@ -116,6 +116,22 @@ CREATE TABLE IF NOT EXISTS daily_watch (
     created     REAL NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS activity_spans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    started REAL NOT NULL,
+    ended REAL NOT NULL,
+    state TEXT NOT NULL,
+    app TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS activity_spans_ended ON activity_spans (ended);
+CREATE TABLE IF NOT EXISTS activity_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    time REAL NOT NULL,
+    kind TEXT NOT NULL,
+    app TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS activity_events_time ON activity_events (time);
+
 CREATE TABLE IF NOT EXISTS daily_favs (
     path    TEXT PRIMARY KEY,
     label   TEXT NOT NULL DEFAULT '',

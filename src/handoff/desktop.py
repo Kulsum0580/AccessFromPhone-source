@@ -273,6 +273,7 @@ class Tray:
         return Menu(
             item(APP, None, enabled=False),
             item(lambda _: status_line(r.owner_ready(), r.phones_online(), r.phones_paired()), None, enabled=False),
+            item(lambda _: self._usage_text(), self.open),
             Menu.SEPARATOR,
             item("Open", self.open, default=True),
             item("Connect a phone…", self.open),
@@ -283,6 +284,19 @@ class Tray:
             Menu.SEPARATOR,
             item("Quit", self.quit),
         )
+
+    def _usage_text(self) -> str:
+        daily = getattr(self._running.app.state, "daily", None)
+        if daily is None or not daily.cfg.enabled:
+            return "Usage tracking off"
+        status = daily.activity.status()
+        if not status["enabled"]:
+            return "Usage tracking off"
+        if status["paused"] or status["suspended"]:
+            return "Usage recording paused"
+        if not status["supported"] or status["error"]:
+            return "Usage tracking unavailable"
+        return "Usage recording on"
 
     def _anywhere_text(self) -> str:
         s = self._running.anywhere_status()
@@ -313,11 +327,12 @@ class Tray:
             try:
                 state, online = tray_state(r.owner_ready(), r.phones_online(), bool(r.anywhere_status().get("active")))
                 online_count, paired = r.phones_online(), r.phones_paired()
-                key = (state, online, online_count, paired, r.owner_ready())
+                usage = self._usage_text()
+                key = (state, online, online_count, paired, r.owner_ready(), usage)
                 if key != self._last:
                     self._last = key
                     self.icon.icon = self._make(state, online)
-                    self.icon.title = f"{APP}: {status_line(r.owner_ready(), online_count, paired)}"
+                    self.icon.title = f"{APP}: {status_line(r.owner_ready(), online_count, paired)} | {usage}"
                     self.icon.update_menu()
                 accounts = r.app.state.accounts
                 if accounts is not None:

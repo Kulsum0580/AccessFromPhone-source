@@ -34,6 +34,7 @@ ROUTE_LEVEL: list[tuple[str, "re.Pattern[str]", str]] = [
     ("DELETE", re.compile(r"^/api/daily/(tasks|watch)/[^/]+$"), "operator"),
     ("POST", re.compile(r"^/api/daily/inbox/[^/]+/(clipboard|open)$"), "operator"),
     ("POST", re.compile(r"^/api/daily/snap/webcam$"), "admin"),
+    ("POST", re.compile(r"^/api/daily/activity/close$"), "admin"),
     ("POST", re.compile(r"^/api/daily/(inbox/text|notes|favourites|notifications/dismiss)$"), "editor"),
     ("PUT", re.compile(r"^/api/daily/inbox/file$"), "editor"),
     ("DELETE", re.compile(r"^/api/daily/(inbox/[^/]+|favourites)$"), "editor"),

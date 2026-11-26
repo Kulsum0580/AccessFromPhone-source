@@ -159,7 +159,7 @@
   };
 
   const DEFAULTS = {
-    name: "", theme: "dark", accent: "cyan", text: "m", reduceMotion: false,
+    name: "", theme: "light", accent: "cyan", text: "m", reduceMotion: false,
     motion: "",   // "full" (3D), "simple" (same look, flat and gentle) or "off". "" = chosen for this phone automatically (see motionLevel)
     haptics: true, ticks: false, sounds: true,
     input: "auto", hold: "hold", lang: "en-IN", autoSend: true, speak: "voice", rate: 1,
@@ -212,16 +212,19 @@
 
   /* ===================================================================== haptics */
 
-  const PATTERNS = { tick: 6, light: 10, medium: 20, heavy: 35, success: [10, 50, 10], warning: [20, 40, 20], error: [30, 50, 30, 50, 30], alert: [40, 70, 40, 70, 110] };
+  const PATTERNS = { tick: 12, light: 20, medium: 32, heavy: 50, success: [10, 50, 10], warning: [20, 40, 20], error: [30, 50, 30, 50, 30], alert: [40, 70, 40, 70, 110] };
   const canVibrate = typeof navigator.vibrate === "function";
+  let actionFeedback = null;
   function haptic(kind = "light") {
     if (!cfg.haptics) return;
+    if (actionFeedback && !actionFeedback.allow(kind)) return;
     // The phone app vibrates natively: that works even before the first tap (a browser ignores vibration until then) and is the same on every phone.
     if (window.AfpApp && window.AfpApp.haptic) { try { window.AfpApp.haptic(kind); } catch { /* the app is closing */ } return; }
     if (!canVibrate) return;
     if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return; // the browser ignores it until the first tap
-    try { navigator.vibrate(PATTERNS[kind] || 10); } catch { /* not allowed yet: needs a tap first */ }
+    try { navigator.vibrate(PATTERNS[kind] || PATTERNS.light); } catch { /* not allowed yet: needs a tap first */ }
   }
+  if (window.AfpUx) actionFeedback = window.AfpUx.actionHaptics(document, haptic);
 
   /* ===================================================================== sounds: made on the phone, no files needed */
 
@@ -502,7 +505,7 @@
     const sheet = h("div", { class: "sheet" + (full ? " full" : ""), role: "dialog", "aria-modal": "true", "aria-label": title, tabindex: "-1" });
     const inner = h("div", { class: "sheet-body" }, body);
     sheet.append(h("div", { class: "sheet-grip" }),
-      h("div", { class: "sheet-head" }, h("h2", { text: title }), h("button", { class: "iconbtn", type: "button", "aria-label": "Close", onclick: () => closeSheet() }, ico("x"))), inner);
+      h("div", { class: "sheet-head" }, h("h2", { text: title }), h("button", { class: "iconbtn", type: "button", "aria-label": "Close", "data-haptic": "tick", onclick: () => closeSheet() }, ico("x"))), inner);
     wrap.append(sheet);
     wrap.addEventListener("pointerdown", (e) => { if (e.target === wrap) closeSheet(); });
     $("#layer").append(wrap);
@@ -562,7 +565,7 @@
     return new Promise((resolve) => {
       const wrap = h("div", { class: "dlg-wrap", role: "presentation" });
       const yes = h("button", { class: "btn " + (tone === "danger" ? "danger" : "primary"), type: "button" }, ok);
-      const no = h("button", { class: "btn ghost", type: "button" }, cancel || "Close");
+      const no = h("button", { class: "btn ghost", type: "button", "data-haptic": "tick" }, cancel || "Close");
       if (!cancel) no.hidden = true;
       const box = h("div", { class: "dlg " + tone, role: "alertdialog", "aria-modal": "true", "aria-label": title },
         h("div", { class: "dlg-ico" }, ico(icon, 26)), h("h2", { text: title }), message ? h("p", { text: message }) : null, h("div", { class: "dlg-btns" + (cancel ? "" : " one") }, no, yes));
@@ -1425,6 +1428,7 @@
         if (want && Date.now() - began < MAX_MS) { base = text(); cur = ""; try { r.start(); return; } catch { /* fall through */ } }
         want = false;
         const f = ended; ended = null; if (f) f(text());
+        cb.finished && cb.finished();
       };
       return r;
     }
@@ -2628,6 +2632,57 @@
   }
   const dailyOn = () => !!(S.info && S.info.daily && S.info.daily.enabled) && !S.offline;
 
+  function homeSetupCard(list) {
+    const rows = list.steps.map((s) => h("div", { class: "hm-step" + (s.done ? " done" : "") }, h("span", { class: "mark" }, s.done ? ico("check") : null),
+      h("div", { class: "grow" }, h("b", { text: s.title }), h("small", { text: s.sub })), !s.done && s.action ? h("button", { class: "hm-pill", type: "button", onclick: () => {
+        haptic("tick"); closeSheet(); setTimeout(() => s.action[1](), 180);
+      } }, s.action[0]) : null));
+    return h("section", { class: "hm-card" }, h("div", { class: "hm-head" }, h("b", { text: "Get set up" }), h("span", { class: "hm-chip ok", text: `${list.done} of ${list.steps.length} done` })),
+      h("div", { class: "hm-progress" }, h("i", { style: `width:${list.done / list.steps.length * 100}%` })), ...rows,
+      h("button", { class: "hm-link", type: "button", onclick: () => { store.setRaw("afp_checklist_off", "1"); S.homeSig = ""; closeSheet(); renderHome(); } }, "Hide this"));
+  }
+
+  function openHomeControls() {
+    const show = () => {
+      if (Daily) Daily.sync(S.info);
+      const card = Daily && Daily.homeCard();
+      if (!card) { toast("Audio and display controls aren't available on this PC."); return; }
+      openSheet({ title: "Audio and display", body: card, full: true, route: "home-controls" });
+    };
+    if (Daily) { show(); return; }
+    if (!dailyOn()) { toast("Audio and display controls aren't available on this PC."); return; }
+    const loading = loadDaily();
+    if (loading) loading.then(() => {
+      if (Daily) show(); else toast("Couldn't load the PC controls.");
+    });
+    else toast("Couldn't load the PC controls.");
+  }
+
+  function openHomeMore(list, listOpen) {
+    const body = h("div", { class: "hm-more" });
+    const chat = h("button", { class: "hm-more-chat", type: "button", onclick: () => { closeSheet(); setTimeout(() => setTab("chat"), 180); } }, ico("chat"), "Open Chat");
+    const paint = () => {
+      const children = [];
+      if (Daily) {
+        Daily.sync(S.info);
+        const card = Daily.homeCard();
+        if (card) children.push(card);
+      }
+      if (listOpen) children.push(homeSetupCard(list));
+      children.push(chat);
+      body.replaceChildren(...children);
+    };
+    openSheet({ title: "More", body, full: true, route: "home-more" });
+    if (dailyOn() && !Daily) {
+      const loading = loadDaily();
+      if (loading) loading.then(() => {
+        if (Daily) paint();
+        else body.replaceChildren(h("p", { class: "note", role: "status", text: "Couldn't load the PC tools." }), chat);
+      });
+      else body.replaceChildren(h("p", { class: "note", role: "status", text: "PC tools aren't available." }), chat);
+    } else paint();
+  }
+
   /** Home is the bottom of the stack. Opening the chat from it adds one history entry, so Back (or the arrow) returns Home. */
   function setTab(tab, { push = true } = {}) {
     tab = tab === "chat" ? "chat" : "home";
@@ -2642,12 +2697,12 @@
     else { S.stick = true; if (S.model) update(true); }
   }
 
-  const TAB_DEFS = [["home", "Home", "home"], ["chat", "Chat", "chat"], ["access", "Access", "monitor"], ["files", "Files", "folder"], ["settings", "Settings", "sliders"]];
+  const TAB_DEFS = [["home", "Home", "home"], ["chat", "Chat", "chat"], ["files", "Files", "folder"], ["settings", "Settings", "sliders"]];
   const calmMotion = () => motionLevel() === "off" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
 
   /* Each tab that opens a screen gets its own oil-paint transition (ux.js paint): the PC is scanned like a screen, Files is a stack of papers, Settings is a dial being turned.
      The screen is opened once the paint covers the page, so nothing flashes on the way. */
-  const TAB_PAINT = { access: ["pc", "Your PC", "monitor"], files: ["files", "Files", "folder"], settings: ["settings", "Settings", "sliders"] };
+  const TAB_PAINT = { access: ["pc", "PC Access", "monitor"], files: ["files", "Files", "folder"], settings: ["settings", "Settings", "sliders"] };
   function tabTo(key) {
     haptic("tick");
     const opener = key === "files" ? () => openFolder("") : key === "settings" ? () => openSettings()
@@ -2722,7 +2777,7 @@
       { done: true, title: "Connect your phone", sub: `Paired with ${(S.info && S.info.pc) || "your PC"}` },
       { done: (f.granted || []).length > 0, title: "Allow a folder", sub: "Pick a folder in Files and allow it", action: ["Open", () => openFolder("")] },
       { done: Push.on(), title: "Turn on notifications", sub: "Know when a request needs you", action: ["Turn on", async () => {
-        try { if (!Push.info) await Push.load(); const why = Push.why(); if (why) { toast(why); return; } await Push.enable(); await Push.load(); S.homeSig = ""; renderHome(); toast("Notifications are on"); haptic("success"); }
+        try { if (!Push.info) await Push.load(); const why = Push.why(); if (why) { toast(why); return; } await Push.enable(); await Push.load(); S.homeSig = ""; renderHome(); if (!Push.native) { toast("Notifications are on"); haptic("success"); } }
         catch (e) { toast(e.message); haptic("error"); }
       }] },
       { done: !!(u && u.configured), title: "Set up unlocking", sub: "Unlock this PC from your phone", action: ["How", () => openSheet({ title: "Set up unlocking", route: "unlockhelp",
@@ -2825,31 +2880,22 @@
     const recent = [...S.jobs].filter((j) => !S.hidden.has(j.conversation)).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 3);
     const list = checklist(), listOpen = list.done < list.steps.length && store.raw("afp_checklist_off") !== "1" && !S.offline;
     const readings = d ? [
-      ["Processor", d.cpu_percent + "%", d.cpu_percent, tone(d.cpu_percent, 70, 90)],
-      ["Memory", d.memory.percent + "%", d.memory.percent, tone(d.memory.percent, 80, 92)],
-      ...(d.disk ? [["Disk free", fmtBytes(d.disk.free), d.disk.percent, tone(d.disk.percent, 85, 95)]] : []),
-    ] : [];
+      ["CPU", d.cpu_percent + "%", d.cpu_percent, tone(d.cpu_percent, 70, 90), "cpu"],
+      ["RAM", d.memory.percent + "%", d.memory.percent, tone(d.memory.percent, 80, 92), "gauge"],
+      ["Storage", d.disk ? `${fmtBytes(d.disk.free)} free` : "Unavailable", d.disk ? d.disk.percent : 0, d.disk ? tone(d.disk.percent, 85, 95) : "", "folder"],
+    ] : ["CPU", "RAM", "Storage"].map((label) => [label, S.offline ? "Unavailable" : "Loading…", 0, "", label === "Storage" ? "folder" : label === "CPU" ? "cpu" : "gauge"]);
     const sig = JSON.stringify([S.online, !!S.offline, S.loaded, S.info && [S.info.pc, S.info.power_actions, S.info.screen_dark, (S.info.folders && S.info.folders.granted || []).length, !!(S.info.daily && S.info.daily.enabled)], !!Daily, !!d, !!(d && d.disk), u,
-      pending.map((j) => j.id), recent.map((j) => [j.id, j.status]), list.steps.map((s) => s.done), listOpen, netKey()]);
+      pending.map((j) => j.id), recent.map((j) => [j.id, j.status, j.summary, j.prompt, j.created_at]), list.steps.map((s) => s.done), listOpen]);
     if (sig === S.homeSig) {
-      // Live readings must not replace buttons or steal focus while someone is using Home.
       root.querySelectorAll(".hm-tile").forEach((tile, i) => {
         const reading = readings[i]; if (!reading) return;
         tile.querySelector("b").textContent = reading[1];
         const bar = tile.querySelector(".hm-bar i");
-        bar.style.width = `${Math.max(2, Math.min(100, reading[2]))}%`;
-        bar.dataset.tone = reading[3];
+        if (bar) {
+          bar.style.width = `${Math.max(2, Math.min(100, reading[2]))}%`;
+          bar.dataset.tone = reading[3];
+        }
       });
-      const net = root.querySelector(".hm-strip .chip-net");
-      if (net) { const nextNet = netChip(); net.className = nextNet.className; net.dataset.level = nextNet.dataset.level || ""; net.setAttribute("aria-label", nextNet.getAttribute("aria-label") || ""); net.replaceChildren(...nextNet.childNodes); }
-      const chip = root.querySelector(".hm-strip .chip-pc:not(.chip-net)");
-      if (chip) {
-        const next = pcChip();
-        chip.className = next.className;
-        chip.dataset.level = next.dataset.level;
-        chip.setAttribute("aria-label", next.getAttribute("aria-label"));
-        chip.replaceChildren(...next.childNodes);
-      }
       return;
     }
     S.homeSig = sig;
@@ -2857,69 +2903,76 @@
     if (!S.pushAsked && S.token && !S.offline) { S.pushAsked = true; Push.load().then(() => { S.homeSig = ""; renderHome(); }).catch(() => {}); }
 
     const pc = (S.info && S.info.pc) || "Your PC";
-    const parts = [];
-    parts.push(h("div", { class: "hm-strip" }, h("span", { class: "hm-dot" + (S.online && !S.offline ? "" : " off") }),
-      h("div", { class: "hm-name" }, h("b", { text: pc }), h("small", { text: S.offline ? "Offline · reading saved chats" : S.online ? "Online" : "Can't reach it" })), h("span", { class: "grow" }), netChip(), pcChip()));  // Settings lives in the bottom bar; the PC's status opens from the battery chip
-    parts.push(h("header", { class: "hm-welcome" }, h("h1", { text: "Your PC, within reach." }),
-      h("p", { text: S.offline ? "Your saved chats are still here." : "Check in, find a file, or pick up where you left off." })));
-    parts.push(pcStage(S.offline || !S.online ? "offline" : pcLocked() ? "locked" : "ok", pc));
-
-    if (pending.length) {
-      const first = pending[0];
-      parts.push(h("button", { class: "hm-banner", type: "button", onclick: () => { haptic("light"); openApprovals(); } }, ico("alert"),
-        h("div", { class: "grow" }, h("b", { text: pending.length === 1 ? "1 request needs you" : `${pending.length} requests need you` }), h("span", { text: shorten(first.summary || first.prompt) })), ico("chevron")));
-    }
-
-    if (!S.offline && !S.loaded && !d && !u) {
-      parts.push(h("section", { class: "hm-card sk-card", "aria-busy": "true", "aria-label": "Loading" }, h("div", { class: "hm-pc" }, h("i", { class: "sk circle" }), h("div", { class: "grow" }, h("i", { class: "sk line" }), h("i", { class: "sk line short" }))),
-        h("div", { class: "hm-btns" }, h("i", { class: "sk btn2" }), h("i", { class: "sk btn2" })), h("div", { class: "hm-tiles" }, h("i", { class: "sk tile" }), h("i", { class: "sk tile" }), h("i", { class: "sk tile" }))));
-      parts.push(h("section", { class: "hm-card sk-card", "aria-hidden": "true" }, h("i", { class: "sk line" }), h("i", { class: "sk line short" })));
-      root.replaceChildren(...parts); return;
-    }
-    const cards = [];
-    if (S.offline) {
-      cards.push(h("section", { class: "hm-card" }, h("div", { class: "hm-pc" }, h("span", { class: "hm-pcicon warn" }, ico("wifiOff")), h("div", { class: "grow" }, h("b", { text: "Your PC is offline" }), h("small", { text: "Showing chats saved on this phone. New requests wait here until it is back." }))),
-        h("div", { class: "hm-btns" }, h("button", { class: "hm-btn primary", type: "button", onclick: () => { haptic("tick"); setTab("chat"); } }, ico("chat"), "Read saved chats"))));
-    } else {
-      const locked = pcLocked(), buttons = [];
-      if (locked && unlockReady()) buttons.push(h("button", { class: "hm-btn primary", type: "button", onclick: () => askPc("unlock my PC") }, ico("unlock"), "Unlock"));
-      else if (!locked && canPower("lock")) buttons.push(h("button", { class: "hm-btn primary", type: "button", onclick: () => askPc("lock my PC") }, ico("lock"), "Lock"));
-      if (canPower("screen_off")) {
-        const dark = !!(S.info && S.info.screen_dark);   // the PC's screen is covered right now: the button gives it back
-        buttons.push(h("button", { class: "hm-btn" + (dark ? " primary" : ""), type: "button", onclick: () => askPc(dark ? "turn on my screen" : "black out my screen") }, ico("monitor"), dark ? "Screen on" : "Screen off"));
-      }
-      if (canPower("sleep")) buttons.push(h("button", { class: "hm-btn", type: "button", onclick: () => askPc("put my PC to sleep") }, ico("moon"), "Sleep"));
-      const known = !!d || !!u;
-      const title = !known ? "Checking…" : locked ? "Locked" : "Unlocked";
-      const sub = !known ? "Asking your PC" : locked ? (unlockReady() ? "Tap Unlock, then approve with your PIN." : "Unlocking isn't set up. Do that on the PC.") : "Ready for requests";
-      const tile = (label, value, pct, tn) => h("div", { class: "hm-tile" }, h("small", { text: label }), h("b", { text: value }), h("div", { class: "hm-bar" }, h("i", { style: `width:${Math.max(2, Math.min(100, pct))}%`, "data-tone": tn })));
-      cards.push(h("section", { class: "hm-card" }, h("div", { class: "hm-pc" }, h("span", { class: "hm-pcicon " + (!known ? "" : locked ? "warn" : "ok") }, ico(!known ? "gauge" : locked ? "lock" : "unlock")),
-        h("div", { class: "grow" }, h("b", { text: title }), h("small", { text: sub }))),
-        buttons.length ? h("div", { class: "hm-btns" }, ...buttons) : null,
-        d ? h("div", { class: "hm-tiles" }, ...readings.map((r) => tile(...r))) : null));
-      const everyday = dailyOn() && Daily ? Daily.homeCard() : null;
-      if (everyday) cards.push(everyday);
-    }
-
-    if (listOpen) {
-      const rows = list.steps.map((s) => h("div", { class: "hm-step" + (s.done ? " done" : "") }, h("span", { class: "mark" }, s.done ? ico("check") : null),
-        h("div", { class: "grow" }, h("b", { text: s.title }), h("small", { text: s.sub })), !s.done && s.action ? h("button", { class: "hm-pill", type: "button", onclick: () => { haptic("tick"); s.action[1](); } }, s.action[0]) : null));
-      cards.push(h("section", { class: "hm-card" }, h("div", { class: "hm-head" }, h("b", { text: "Get set up" }), h("span", { class: "hm-chip ok", text: `${list.done} of ${list.steps.length} done` })),
-        h("div", { class: "hm-progress" }, h("i", { style: `width:${list.done / list.steps.length * 100}%` })), ...rows,
-        h("button", { class: "hm-link", type: "button", onclick: () => { store.setRaw("afp_checklist_off", "1"); S.homeSig = ""; renderHome(); } }, "Hide this")));
-    }
-
-    if (recent.length) {
-      cards.push(h("div", { class: "hm-sect" }, h("b", { text: "Recent" }), h("button", { class: "hm-link", type: "button", onclick: () => { haptic("tick"); setTab("chat"); } }, "Open chat")));
-      cards.push(h("section", { class: "hm-card hm-recent" }, ...recent.map((j) => h("button", { class: "hm-row", type: "button", onclick: () => { haptic("tick"); S.conv = j.conversation; store.setRaw("afp_conv", S.conv); setTab("chat"); } },
-        h("span", { class: "hm-ric " + (j.status === "done" ? "ok" : j.status === "failed" || j.status === "rejected" ? "bad" : "warn") }, ico(j.status === "done" ? "check" : j.status === "failed" ? "alert" : "clock")),
-        h("div", { class: "grow" }, h("b", { text: shorten(j.summary || j.prompt, 48) }), h("small", { text: LABEL[j.status] || j.status })), h("time", { text: ago(j.created_at) })))));
-    } else if (S.loaded && !S.offline) {
-      cards.push(h("section", { class: "hm-card hm-empty" }, ico("chat"),
-        h("div", {}, h("h2", { text: "Start with something simple" }), h("p", { text: "Open Chat and try \"list\" to see your workspace. Your recent requests will appear here." }),
-          h("button", { class: "hm-link", type: "button", onclick: () => setTab("chat") }, "Open chat"))));
-    }
-    root.replaceChildren(...parts, h("div", { class: "hm-body" }, ...cards));
+    const online = S.online && !S.offline;
+    const status = S.offline ? "Offline" : S.online ? "Online" : "Connecting";
+    const screenState = !online ? "offline" : pcLocked() ? "locked" : "ok";
+    const version = (d && (d.windows_version || d.os_version)) || (S.info && (S.info.windows_version || S.info.os_version)) || "Windows version unavailable";
+    const openScreen = () => {
+      haptic("tick");
+      if (Screen) Screen.open(); else toast("PC screen viewing isn't available in this version.");
+    };
+    const remoteOptions = h("details", { class: "hm-remote-options" },
+      h("summary", { "aria-label": "More PC access options" }, ico("chevron")),
+      h("div", { class: "hm-remote-menu", role: "menu" },
+        h("button", { type: "button", role: "menuitem", onclick: (e) => { e.currentTarget.closest("details").open = false; openScreen(); } }, ico("eye"), "View PC Screen"),
+        h("button", { type: "button", role: "menuitem", onclick: (e) => { e.currentTarget.closest("details").open = false; tabTo("access"); } }, ico("monitor"), "PC Access")));
+    const actions = [
+      h("button", { class: "hm-action", type: "button", disabled: S.offline || (pcLocked() ? !unlockReady() : !canPower("lock")), onclick: () => askPc(pcLocked() ? "unlock my PC" : "lock my PC") },
+        h("span", { class: "hm-action-icon blue" }, ico(pcLocked() ? "unlock" : "lock")), h("small", { text: pcLocked() ? "Unlock" : "Lock" })),
+      h("button", { class: "hm-action", type: "button", disabled: S.offline || !canPower("sleep"), onclick: () => askPc("put my PC to sleep") },
+        h("span", { class: "hm-action-icon purple" }, ico("moon")), h("small", { text: "Sleep" })),
+      h("button", { class: "hm-action", type: "button", disabled: !dailyOn(), onclick: openHomeControls },
+        h("span", { class: "hm-action-icon cyan" }, ico("volume")), h("small", { text: "Audio" })),
+      h("button", { class: "hm-action", type: "button", disabled: S.offline || !canPower("screen_off"), onclick: () => askPc(S.info && S.info.screen_dark ? "turn on my screen" : "black out my screen") },
+        h("span", { class: "hm-action-icon amber" }, ico("sun")), h("small", { text: "Display" })),
+      h("button", { class: "hm-action", type: "button", disabled: !Screen || !online, onclick: openScreen },
+        h("span", { class: "hm-action-icon blue" }, ico("keyboard")), h("small", { text: "Keyboard" })),
+      h("button", { class: "hm-action", type: "button", onclick: () => openHomeMore(list, listOpen) },
+        h("span", { class: "hm-action-icon neutral" }, ico("dots")), h("small", { text: "More" })),
+    ];
+    const metric = ([label, value, pct, tn, icon]) => h("div", { class: "hm-tile" },
+      h("div", { class: "hm-metric-label" }, ico(icon), h("small", { text: label })),
+      h("b", { text: value }), h("div", { class: "hm-bar" }, h("i", { style: `width:${Math.max(2, Math.min(100, pct))}%`, "data-tone": tn })));
+    const parts = [
+      h("header", { class: "hm-topbar" },
+        h("div", { class: "hm-brand" }, glyph(24), h("b", { text: "AccessFromPhone" })),
+        h("div", { class: "hm-top-actions" },
+          h("button", { class: "hm-icon-btn", type: "button", "aria-label": pending.length ? `${pending.length} pending approvals` : "Notifications", onclick: () => { haptic("tick"); openApprovals(); } },
+            ico("bell"), pending.length ? h("em", { text: String(pending.length) }) : null),
+          h("button", { class: "hm-profile", type: "button", "aria-label": "Profile and settings", onclick: (e) => profileMenu(e.currentTarget) }, avatar()))),
+      h("header", { class: "hm-welcome" },
+        h("h1", {}, h("span", { class: "hm-title-main" },
+            h("span", { class: "hm-windows-mark", "aria-hidden": "true" }, h("i"), h("i"), h("i"), h("i")),
+            h("span", { text: "Your Windows PC," })), h("em", { text: "Always with You" })),
+        h("p", { text: "Access • Control • Manage — from anywhere" })),
+    ];
+    const device = h("section", { class: "hm-card hm-connected" },
+      h("div", { class: "hm-device-row" },
+        h("div", { class: "hm-device-art", "data-state": screenState, "aria-hidden": "true" },
+            h("span", { class: "hm-device-screen" }, h("i"), h("i"), h("i"), h("i")),
+          h("span", { class: "hm-device-dot" })),
+        h("div", { class: "hm-device-info" },
+          h("b", { class: "hm-device-name", text: pc }),
+          h("span", { class: "hm-device-status" + (online ? " online" : ""), role: "status" }, h("i"), status),
+          h("small", { class: "hm-os-version" },
+            h("span", { class: "hm-win-mini", "aria-hidden": "true" }, h("i"), h("i"), h("i"), h("i")),
+            h("span", { text: version }))),
+        h("button", { class: "hm-device-open", type: "button", "aria-label": "Open PC Access", onclick: () => tabTo("access") }, ico("chevron"))),
+      h("div", { class: "hm-tiles" }, ...readings.map(metric)));
+    const remoteAction = h("div", { class: "hm-remote-wrap" },
+      h("button", { class: "hm-remote", type: "button", disabled: !online || !Screen, onclick: openScreen }, ico("monitor"), h("span", { text: "Remote Desktop" })),
+      remoteOptions);
+    const quickActions = h("section", { class: "hm-quick", "aria-label": "Quick actions" }, ...actions);
+    const activityItems = recent.length ? recent.map((j) => h("button", { class: "hm-row", type: "button", onclick: () => { haptic("tick"); S.conv = j.conversation; store.setRaw("afp_conv", S.conv); setTab("chat"); } },
+      h("span", { class: "hm-ric " + (j.status === "done" ? "ok" : j.status === "failed" || j.status === "rejected" ? "bad" : "warn") }, ico(j.status === "done" ? "check" : j.status === "failed" || j.status === "rejected" ? "alert" : "clock")),
+      h("div", { class: "grow" }, h("b", { text: shorten(j.summary || j.prompt, 48) }), h("small", { text: LABEL[j.status] || j.status })), h("time", { text: ago(j.created_at) })))
+      : [h("p", { class: "hm-activity-empty", text: S.loaded ? "No recent activity." : "Recent activity will appear here." })];
+    const activity = h("section", { class: "hm-card hm-recent hm-activity" },
+      h("div", { class: "hm-activity-head" },
+        h("h2", {}, ico("clock"), h("span", { text: "Recent Activity" })),
+        h("button", { class: "hm-link", type: "button", onclick: () => { haptic("tick"); setTab("chat"); } }, "View All", ico("chevron"))),
+      h("div", { class: "hm-activity-list" }, ...activityItems));
+    root.replaceChildren(...parts, device, remoteAction, quickActions, activity);
     if (S.homeEnter !== false) {   // the cards rise in once when you arrive at Home, not on every refresh (that would flicker)
       S.homeEnter = false; root.dataset.enter = "1";
       setTimeout(() => { delete root.dataset.enter; }, 1200);
@@ -3547,6 +3600,7 @@
   // the PC says which it can send. The phone only hands over an address; nothing about your requests is stored by anyone else.
   const Push = {
     info: null,
+    nativeEnablePending: false,
     native: !!(window.AfpApp && window.AfpApp.enablePush),
     async load() { try { this.info = await (await api("/push")).json(); } catch (e) { if (e.code === 401) throw e; this.info = null; } return this.info; },
     /** Why notifications can't be turned on here, or "" when they can. */
@@ -3565,8 +3619,12 @@
     },
     on() { return !!(this.info && this.info.subscribed && this.info.subscribed.length); },
     bytes(text) { const raw = atob(text.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (text.length % 4)) % 4)); return Uint8Array.from(raw, (c) => c.charCodeAt(0)); },
-    async enable() {
-      if (this.native) { window.AfpApp.enablePush(); return; }  // the app asks Android for permission, then answers with an "afp-push" event
+    async enable({ quiet = false } = {}) {
+      if (this.native) {
+        if (!quiet) this.nativeEnablePending = true;
+        try { window.AfpApp.enablePush(); } catch (error) { this.nativeEnablePending = false; throw error; }
+        return;
+      }
       const permission = await Notification.requestPermission();
       if (permission !== "granted") throw new Error("Notifications were not allowed.");
       const reg = await navigator.serviceWorker.ready;
@@ -3578,6 +3636,7 @@
     },
     async send(body) { const r = await (await api("/push/subscribe", { method: "POST", body: JSON.stringify(body) })).json(); this.info.subscribed = r.subscribed; store.setRaw("afp_push", "1"); },
     async disable() {
+      this.nativeEnablePending = false;
       store.del("afp_push");
       if ("serviceWorker" in navigator) { try { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && (await reg.pushManager.getSubscription()); if (sub) await sub.unsubscribe(); } catch { /* nothing to remove */ } }
       if (window.AfpApp && window.AfpApp.disablePush) window.AfpApp.disablePush();
@@ -3586,15 +3645,17 @@
     /** On every start: if it was on, make sure the PC still has this phone's current address (browsers and Firebase change it now and then). */
     async refreshQuietly() {
       if (!S.token || store.raw("afp_push") !== "1") return;
-      try { await this.load(); if (this.info && this.info.enabled && !this.why()) { if (this.native || Notification.permission === "granted") await this.enable(); } } catch { /* try again next start */ }
+      try { await this.load(); if (this.info && this.info.enabled && !this.why()) { if (this.native || Notification.permission === "granted") await this.enable({ quiet: true }); } } catch { /* try again next start */ }
     },
   };
   // The Android app answers enablePush() (and a changed token) with this event.
   window.addEventListener("afp-push", async (event) => {
     const d = event.detail || {};
-    if (d.error) { toast(d.error); return; }
+    const announce = Push.nativeEnablePending;
+    Push.nativeEnablePending = false;
+    if (d.error) { if (announce) toast(d.error); return; }
     if (!d.token || !S.token) return;
-    try { if (!Push.info) await Push.load(); await Push.send({ kind: "fcm", token: d.token }); toast("Notifications are on"); haptic("success"); } catch (e) { toast("Couldn't turn notifications on: " + e.message); }
+    try { if (!Push.info) await Push.load(); await Push.send({ kind: "fcm", token: d.token }); if (announce) { toast("Notifications are on"); haptic("success"); } } catch (e) { if (announce) toast("Couldn't turn notifications on: " + e.message); }
     refreshNotifyRow();
   });
 
@@ -3909,7 +3970,7 @@
       { key: "trust", icon: "shield", title: "Your data and control", sub: "What it can reach · Pause", build: buildTrust },
       { key: "device", icon: "user", title: "Profile and phone", sub: `${displayName()}${info && info.device ? " · " + info.device.name : ""}`, build: buildDevice },
       { key: "notify", icon: "bell", title: "Notifications", sub: Push.on() ? "On" : "Off", build: buildNotify },
-      { key: "look", icon: "palette", title: "Look and feel", sub: `${THEME_NAME[cfg.theme] || "Dark"} · ${cfg.accent}${cfg.haptics ? "" : " · no buzz"}`, build: buildLook },
+      { key: "look", icon: "palette", title: "Look and feel", sub: `${THEME_NAME[cfg.theme] || "Light"} · ${cfg.accent}${cfg.haptics ? "" : " · no buzz"}`, build: buildLook },
       { key: "voice", icon: "mic", title: "Voice and input", sub: langInfo(cfg.lang)[1], build: buildVoice },
       { key: "devices", icon: "phone", title: "Connected devices", sub: "Who is using this PC", build: buildDevices },
       { key: "lock", icon: "shield", title: "App lock", sub: Lock.on() ? "On" : "Off", build: buildLock },

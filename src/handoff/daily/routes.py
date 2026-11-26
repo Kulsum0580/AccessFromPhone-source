@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Literal
 
@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
 from ..access import levels
+from .. import appctl
 from ..policy import OutsideAllowed, PathDenied
 from ..push import Message
 from ..screen import ScreenBusy, ScreenNotAllowed, ScreenUnavailable
@@ -26,6 +27,12 @@ from .watch import WatchError, list_processes
 class ControlIn(BaseModel):
     action: str = Field(min_length=1, max_length=30)
     steps: int = Field(default=1, ge=1, le=10)
+
+
+class CloseApplicationIn(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    confirmed: Literal[True]
+    force: bool = False
 
 
 class PlaceIn(BaseModel):
@@ -134,7 +141,58 @@ def mount(api: APIRouter, *, daily, settings, manager, access, screen, screen_da
     @api.get("/daily/briefing")
     def briefing(request: Request) -> dict:
         on()
-        return daily.briefing()
+        result = daily.briefing()
+        device = device_of(request)
+        if device is not None and access.store.level(device.id) == "admin":
+            report = daily.activity.report()
+            result["activity"] = {key: report[key] for key in ("enabled", "paused", "current", "totals", "observed_seconds")}
+        return result
+
+    @api.get("/daily/activity")
+    def activity_report(request: Request, day: date | None = None) -> dict:
+        on()
+        device = device_of(request)
+        if device is None or access.store.level(device.id) != "admin":
+            raise HTTPException(status_code=403, detail={"code": "level", "message": "Activity history is only available to the paired Admin phone."})
+        try:
+            report = daily.activity.report(day)
+        except ValueError as exc:
+            raise bad(exc) from None
+        names = set(report["open_apps"])
+        names.update(app["name"] for app in report["applications"])
+        names.update(event["app"] for event in report["events"])
+        names.add(report["current"]["app"])
+        names.discard("")
+        report["can_close"] = report["recording"] and report["current"]["state"] != "locked"
+        report["protected_apps"] = [name for name in report["open_apps"] if name.casefold() in appctl.PROTECTED_CLOSE_APPS]
+        report["force_quit_apps"] = [name for name in report["open_apps"]
+                         if name.casefold() not in appctl.PROTECTED_CLOSE_APPS | {"explorer.exe", "applicationframehost.exe"}]
+        try:
+            report["icons"] = daily.activity.icons.for_names(names)
+        except Exception:
+            report["icons"] = {}
+        return report
+
+    @api.post("/daily/activity/close")
+    def close_application(body: CloseApplicationIn, request: Request) -> dict:
+        on()
+        device = device_of(request)
+        if device is None or access.store.level(device.id) != "admin":
+            raise HTTPException(status_code=403, detail={"code": "level", "message": "Only the paired Admin phone may close applications."})
+        status = daily.activity.status()
+        if not status["recording"] or body.name not in status["open_apps"]:
+            raise bad(ValueError("Refresh Activity first. The application must be in the live open-app list and recording must be on."), 409)
+        if body.force:
+            manager.note("application_force_quit_requested", app=body.name, by=who(request)[1])
+        try:
+            count = appctl.request_close(body.name, force=True) if body.force else appctl.request_close(body.name)
+        except (appctl.AppError, OSError) as exc:
+            raise bad(exc, 409) from None
+        if body.force:
+            manager.note("application_force_quit", app=body.name, processes=count, by=who(request)[1])
+            return {"ok": True, "processes_closed": count, "message": f"Force-quit {body.name}."}
+        manager.note("application_close_requested", app=body.name, windows=count, by=who(request)[1])
+        return {"ok": True, "windows_requested": count, "message": f"Close requested for {body.name}. A save prompt may need attention on the PC."}
 
     # -- quick controls ----------------------------------------------------------------------------------------------------
 
@@ -369,7 +427,7 @@ def mount(api: APIRouter, *, daily, settings, manager, access, screen, screen_da
     def processes(request: Request) -> dict:
         on()
         need(request, "operator")
-        return {"processes": list_processes()}
+        return {"processes": list_processes(limit=None)}
 
     @api.post("/daily/watch")
     def watch_add(body: WatchIn, request: Request) -> dict:

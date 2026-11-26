@@ -13,6 +13,72 @@ APPS = [AppEntry("Microsoft Teams", "MSTeams_8wekyb3d8bbwe!MSTeams"), AppEntry("
 
 # -- the Start menu ------------------------------------------------------------------------------------
 
+
+def test_close_requests_target_only_matching_unowned_windows(monkeypatch):
+    import ctypes
+    import os
+    import sys
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    import psutil
+    from handoff.appctl import request_close
+
+    user = Mock()
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(ctypes, "WinDLL", lambda *args, **kwargs: user, raising=False)
+    monkeypatch.setattr(ctypes, "WINFUNCTYPE", ctypes.CFUNCTYPE, raising=False)
+    user.OpenInputDesktop.return_value = 1
+    user.IsWindowVisible.side_effect = lambda window: window not in (104, 999)
+    user.GetWindow.side_effect = lambda window, kind: 100 if window == 103 else 999 if window == 100 else 0
+    ids = {100: 700001, 101: 700002, 102: os.getpid(), 103: 700001, 104: 700001, 105: 700003}
+    user.GetWindowThreadProcessId.side_effect = lambda window, pointer: setattr(pointer._obj, "value", ids[window])
+    user.PostMessageW.return_value = 1
+    kills = []
+    names = {700001: "notepad.exe"}
+    terminate = Mock(side_effect=lambda pid: kills.append(pid))
+    monkeypatch.setattr(psutil, "Process", lambda pid: SimpleNamespace(
+        pid=pid, parents=lambda: [SimpleNamespace(pid=700003)], name=lambda: names.get(pid, "other.exe"), kill=lambda: terminate(pid)))
+    monkeypatch.setattr(psutil, "wait_procs", lambda processes, timeout: (processes, []))
+
+    def enumerate_windows(callback, context):
+        for window in ids:
+            callback(window, context)
+        return True
+
+    user.EnumWindows.side_effect = enumerate_windows
+    assert request_close("NOTEPAD.EXE") == 1
+    user.PostMessageW.assert_called_once_with(100, 0x0010, 0, 0)
+    assert request_close("NOTEPAD.EXE", force=True) == 1
+    assert kills == [700001]
+    with pytest.raises(AppError, match="disconnect"):
+        request_close("other.exe", force=True)
+    assert kills == [700001]
+    terminate.side_effect = psutil.AccessDenied(700001)
+    with pytest.raises(AppError, match="denied permission"):
+        request_close("notepad.exe", force=True)
+    names.update({700002: "explorer.exe", 700003: "explorer.exe"})
+    user.GetClassNameW.side_effect = lambda window, buffer, size: setattr(buffer, "value", "CabinetWClass" if window == 105 else "Shell_TrayWnd")
+    user.PostMessageW.reset_mock()
+    assert request_close("explorer.exe") == 1
+    user.PostMessageW.assert_called_once_with(105, 0x0010, 0, 0)
+    with pytest.raises(AppError, match="cannot be force-quit"):
+        request_close("explorer.exe", force=True)
+    with pytest.raises(AppError, match="cannot be force-quit"):
+        request_close("applicationframehost.exe", force=True)
+    user.PostMessageW.reset_mock()
+    user.OpenInputDesktop.return_value = 0
+    with pytest.raises(AppError, match="Unlock"):
+        request_close("notepad.exe")
+    user.PostMessageW.assert_not_called()
+
+
+@pytest.mark.parametrize("name", ["winlogon.exe", "C:/app.exe", "bad\n.exe", "", "notepad"])
+def test_close_rejects_system_apps_and_paths(name):
+    from handoff.appctl import request_close
+
+    with pytest.raises(AppError):
+        request_close(name)
+
 @pytest.mark.parametrize("said,found", [("teams", "Microsoft Teams"), ("Microsoft Teams", "Microsoft Teams"), ("outlook", "Outlook"), ("notepad", "Notepad"), ("chrome", "Google Chrome"),
                                         ("calc", "Calculator"), ("the Excel app", "Excel"), ("note", "Notepad")])
 def test_an_app_is_found_by_the_name_a_person_says(said, found):
