@@ -2697,12 +2697,12 @@
     else { S.stick = true; if (S.model) update(true); }
   }
 
-  const TAB_DEFS = [["home", "Home", "home"], ["access", "Devices", "monitor"], ["files", "Files", "folder"], ["settings", "Settings", "sliders"]];
+  const TAB_DEFS = [["home", "Home", "home"], ["chat", "Chat", "chat"], ["files", "Files", "folder"], ["settings", "Settings", "sliders"]];
   const calmMotion = () => motionLevel() === "off" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
 
   /* Each tab that opens a screen gets its own oil-paint transition (ux.js paint): the PC is scanned like a screen, Files is a stack of papers, Settings is a dial being turned.
      The screen is opened once the paint covers the page, so nothing flashes on the way. */
-  const TAB_PAINT = { access: ["pc", "Devices", "monitor"], files: ["files", "Files", "folder"], settings: ["settings", "Settings", "sliders"] };
+  const TAB_PAINT = { access: ["pc", "PC Access", "monitor"], files: ["files", "Files", "folder"], settings: ["settings", "Settings", "sliders"] };
   function tabTo(key) {
     haptic("tick");
     const opener = key === "files" ? () => openFolder("") : key === "settings" ? () => openSettings()
@@ -2957,7 +2957,7 @@
           h("small", { class: "hm-os-version" },
             h("span", { class: "hm-win-mini", "aria-hidden": "true" }, h("i"), h("i"), h("i"), h("i")),
             h("span", { text: version }))),
-        h("button", { class: "hm-device-open", type: "button", "aria-label": "Open Devices", onclick: () => tabTo("access") }, ico("chevron"))),
+        h("button", { class: "hm-device-open", type: "button", "aria-label": "Open PC Access", onclick: () => tabTo("access") }, ico("chevron"))),
       h("div", { class: "hm-tiles" }, ...readings.map(metric)));
     const remoteAction = h("div", { class: "hm-remote-wrap" },
       h("button", { class: "hm-remote", type: "button", disabled: !online || !Screen, onclick: openScreen }, ico("monitor"), h("span", { text: "Remote Desktop" })),
